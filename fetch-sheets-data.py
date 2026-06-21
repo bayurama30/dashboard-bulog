@@ -1,23 +1,68 @@
 #!/usr/bin/env python3
-"""Fetch data dari Google Sheets dan output JSON untuk Laravel dashboard."""
+"""Fetch data dari Google Sheets dan output JSON untuk Laravel dashboard.
+Self-contained — works on both local dev (hermes token) and Railway (env vars).
+"""
 import sys, json, os
-sys.path.insert(0, os.path.expanduser('~/.hermes/skills/productivity/google-workspace/scripts'))
-from google_api import get_credentials, _set_account
-from googleapiclient.discovery import build
 from collections import defaultdict
+from datetime import datetime
 
-_set_account('pengadaan')
+# --- Google Auth (self-contained) ---
+def get_credentials():
+    """Get credentials from env vars (Railway) or local token file (hermes)."""
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
+
+    client_id = os.environ.get('GOOGLE_CLIENT_ID')
+    client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
+    refresh_token = os.environ.get('GOOGLE_REFRESH_TOKEN')
+
+    if client_id and client_secret and refresh_token:
+        creds = Credentials(
+            token=None,
+            refresh_token=refresh_token,
+            token_uri='https://oauth2.googleapis.com/token',
+            client_id=client_id,
+            client_secret=client_secret,
+            scopes=['https://www.googleapis.com/auth/spreadsheets'],
+        )
+    else:
+        # Fallback: hermes local token
+        hermes = os.path.expanduser('~/.hermes')
+        token_path = os.path.join(hermes, 'google_token_pengadaan.json')
+        if not os.path.exists(token_path):
+            sys.stderr.write(f"Token not found at {token_path} and no env vars set.\n")
+            sys.exit(1)
+        with open(token_path) as f:
+            token_data = json.load(f)
+        creds = Credentials(
+            token=token_data.get('token'),
+            refresh_token=token_data.get('refresh_token'),
+            token_uri=token_data.get('token_uri', 'https://oauth2.googleapis.com/token'),
+            client_id=token_data.get('client_id'),
+            client_secret=token_data.get('client_secret'),
+            scopes=token_data.get('scopes', ['https://www.googleapis.com/auth/spreadsheets']),
+        )
+
+    if creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    if not creds.valid:
+        sys.stderr.write("Credentials invalid.\n")
+        sys.exit(1)
+    return creds
+
+# --- Build service ---
+from googleapiclient.discovery import build
+
 creds = get_credentials()
 service = build('sheets', 'v4', credentials=creds)
 
-# Month order mapping (for sorting without number prefix)
+# Month order mapping
 MONTH_ORDER = {m: i for i, m in enumerate([
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ])}
 
 def sort_by_month(items_dict):
-    """Sort dict by month name chronologically."""
     return dict(sorted(items_dict.items(), key=lambda x: MONTH_ORDER.get(x[0], 99)))
 
 SID = '16G1AOk9NPkr8qvOmz22bW00V9_WsKWPE66izsoz038E'
@@ -132,7 +177,7 @@ pengolahan = {
 }
 
 output = {
-    "fetched_at": __import__('datetime').datetime.now().isoformat(),
+    "fetched_at": datetime.now().isoformat(),
     "gkp": gkp, "jagung": jagung, "beras_pso": beras, "pengolahan": pengolahan
 }
 
