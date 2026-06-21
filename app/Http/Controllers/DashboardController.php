@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Symfony\Component\Process\Process;
 
 class DashboardController extends Controller
 {
@@ -32,5 +33,26 @@ class DashboardController extends Controller
     public function data()
     {
         return response()->json($this->loadData());
+    }
+
+    public function refresh()
+    {
+        $script = base_path('fetch-sheets-data.py');
+        $process = new Process(['python3', $script]);
+        $process->setTimeout(60);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            return response()->json([
+                'ok' => false,
+                'error' => trim($process->getErrorOutput()),
+            ], 500);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'message' => trim($process->getOutput()),
+            'data' => $this->loadData(),
+        ]);
     }
 }

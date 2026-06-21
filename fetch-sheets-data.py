@@ -10,6 +10,16 @@ _set_account('pengadaan')
 creds = get_credentials()
 service = build('sheets', 'v4', credentials=creds)
 
+# Month order mapping (for sorting without number prefix)
+MONTH_ORDER = {m: i for i, m in enumerate([
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+])}
+
+def sort_by_month(items_dict):
+    """Sort dict by month name chronologically."""
+    return dict(sorted(items_dict.items(), key=lambda x: MONTH_ORDER.get(x[0], 99)))
+
 SID = '16G1AOk9NPkr8qvOmz22bW00V9_WsKWPE66izsoz038E'
 OUTPUT = os.path.join(os.path.dirname(__file__), 'storage', 'app', 'dashboard-data.json')
 
@@ -24,56 +34,72 @@ _, data = fetch('data dashboard GKP')
 by_month = defaultdict(float)
 by_wilayah = defaultdict(float)
 by_pemasok = defaultdict(float)
+raw = []
 for row in data:
     if len(row) >= 9:
         try:
             qty = float(row[5].replace('.','').replace(',','.'))
-            by_month[row[8]] += qty
-            by_wilayah[row[6]] += qty
-            by_pemasok[row[1]] += qty
+            bulan = row[8]
+            wilayah = row[6]
+            pemasok = row[1]
+            by_month[bulan] += qty
+            by_wilayah[wilayah] += qty
+            by_pemasok[pemasok] += qty
+            raw.append({'bulan': bulan, 'wilayah': wilayah, 'pemasok': pemasok, 'qty': qty})
         except: pass
 
 gkp = {
-    "by_month": dict(sorted(by_month.items())),
+    "by_month": sort_by_month(by_month),
     "by_wilayah": dict(sorted(by_wilayah.items(), key=lambda x: x[1], reverse=True)),
     "by_pemasok": dict(sorted(by_pemasok.items(), key=lambda x: x[1], reverse=True)[:15]),
-    "total": sum(by_month.values())
+    "total": sum(by_month.values()),
+    "raw": raw
 }
 
 # === JAGUNG ===
 _, data = fetch('data dashboard Jagung')
 jm = defaultdict(float)
 jw = defaultdict(float)
+jraw = []
 for row in data:
     if len(row) >= 9:
         try:
             qty = float(row[5].replace('.','').replace(',','.'))
-            jm[row[8]] += qty
-            jw[row[6]] += qty
+            bulan = row[8]
+            wilayah = row[6]
+            jm[bulan] += qty
+            jw[wilayah] += qty
+            jraw.append({'bulan': bulan, 'wilayah': wilayah, 'qty': qty})
         except: pass
 
 jagung = {
-    "by_month": dict(sorted(jm.items())),
+    "by_month": sort_by_month(jm),
     "by_wilayah": dict(sorted(jw.items(), key=lambda x: x[1], reverse=True)),
-    "total": sum(jm.values())
+    "total": sum(jm.values()),
+    "raw": jraw
 }
 
 # === BERAS PSO ===
 _, data = fetch('data dashboard beras PSO')
 bm = defaultdict(float)
 bw = defaultdict(float)
+braw = []
 for row in data:
     if len(row) >= 7:
         try:
             qty = float(row[3].replace('.','').replace(',','.'))
-            bm[row[6]] += qty
-            bw[row[4]] += qty
+            bulan = row[6]
+            gudang = row[4]
+            bm[bulan] += qty
+            bw[gudang] += qty
+            braw.append({'bulan': bulan, 'gudang': gudang, 'qty': qty})
         except: pass
 
 beras = {
-    "by_month": dict(sorted(bm.items())),
+    "by_month": sort_by_month(bm),
     "by_wilayah": dict(sorted(bw.items(), key=lambda x: x[1], reverse=True)),
-    "total": sum(bm.values())
+    "total": sum(bm.values()),
+    "raw": braw
 }
 
 # === PENGOLAHAN ===
