@@ -65,7 +65,46 @@
     .toast .toast-close{margin-left:auto;cursor:pointer;opacity:.7;font-size:1.1em;background:none;border:none;color:#fff}
     .toast .toast-close:hover{opacity:1}
     @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-    @media(max-width:768px){.chart-grid{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:768px){
+      .header{padding:12px 16px;flex-direction:column;align-items:stretch;gap:10px}
+      .header h1{font-size:1.15em}
+      .header .meta{font-size:.78em}
+      .header-actions{justify-content:space-between;width:100%}
+      .tabs{padding:8px 16px 0;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+      .tabs::-webkit-scrollbar{display:none}
+      .tab{padding:8px 14px;font-size:.82em;white-space:nowrap;border-radius:6px 6px 0 0;flex-shrink:0}
+      .content{padding:16px 12px}
+      .kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+      .kpi{padding:14px 10px;border-radius:10px}
+      .kpi .label{font-size:.72em;margin-bottom:4px}
+      .kpi .value{font-size:1.35em}
+      .kpi .sub{font-size:.72em}
+      .chart-grid{grid-template-columns:1fr;gap:14px}
+      .chart-card{padding:14px;border-radius:10px}
+      .chart-card h3{font-size:.9em;margin-bottom:12px}
+      .chart-wrap{height:280px}
+      .chart-wrap.short{height:240px}
+      .filter-bar{gap:6px;margin-bottom:14px}
+      .filter-bar select,.filter-bar input{min-width:0;flex:1 1 auto;font-size:.8em;padding:8px 10px}
+      .filter-bar .btn-reset{font-size:.8em;padding:8px 12px;flex-shrink:0}
+      table{font-size:.78em}
+      th,td{padding:8px 10px}
+      .btn-refresh{font-size:.8em;padding:8px 14px}
+      .badge{font-size:.72em;padding:2px 8px}
+      .toast-container{top:12px;right:12px;left:12px}
+      .toast{max-width:100%;font-size:.82em;padding:12px 16px}
+      .theme-toggle .switch{width:42px;height:23px;border-radius:12px}
+      .theme-toggle .switch::after{width:17px;height:17px}
+      .theme-toggle.light .switch::after{transform:translateX(19px)}
+      .theme-toggle .icon{font-size:1em}
+    }
+    @media(max-width:420px){
+      .kpi-grid{grid-template-columns:1fr}
+      .kpi .value{font-size:1.25em}
+      .chart-wrap{height:250px}
+      .chart-wrap.short{height:210px}
+      .btn-refresh{font-size:.75em;padding:7px 12px}
+    }
   </style>
 </head>
 <body>
