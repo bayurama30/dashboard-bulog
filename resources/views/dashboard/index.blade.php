@@ -93,11 +93,13 @@
   <div class="chart-grid">
     <div class="chart-card"><h3>Perbandingan Pengadaan vs Diolah (Top 10)</h3><div class="chart-wrap"><canvas id="olah-mitra"></canvas></div></div>
     <div class="chart-card"><h3>Progress Gauge</h3><div class="chart-wrap short"><canvas id="olah-gauge"></canvas></div></div>
+    <div class="chart-card"><h3>Pemasukan Fisik vs Tonase Pengolahan (Top 10)</h3><div class="chart-wrap"><canvas id="olah-fisik"></canvas></div></div>
+    <div class="chart-card"><h3>Rendeman per Mitra (Top 10)</h3><div class="chart-wrap"><canvas id="olah-rendeman"></canvas></div></div>
     <div class="chart-card full">
       <h3>Detail per Mitra (<span id="olah-mitra-count">{{ count($data['pengolahan']['mitra']) }}</span> mitra)</h3>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Mitra</th><th>Pengadaan (kg)</th><th>Diolah (kg)</th><th>Sisa (kg)</th><th>Rasio</th></tr></thead>
+          <thead><tr><th>Mitra</th><th>Pengadaan GKP (kg)</th><th>Pemasukan Fisik (kg)</th><th>Tonase Olah GKP (kg)</th><th>Sisa (kg)</th><th>Rasio</th></tr></thead>
           <tbody id="olah-tbody">
             @foreach($data['pengolahan']['mitra'] as $m)
             <tr>
@@ -207,6 +209,37 @@
           plugins:[{id:'gaugeText',afterDraw(chart){const{ctx,chartArea:{top,bottom,left,right}}=chart;const x=(left+right)/2,y=(top+bottom)/2.6;ctx.save();ctx.font='bold 32px -apple-system,sans-serif';ctx.fillStyle='#e1e4ed';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(rasio+'%',x,y-8);ctx.font='14px -apple-system,sans-serif';ctx.fillStyle='#8b90a0';ctx.fillText('Diolah '+fmtKg(to)+' / Total '+fmtKg(tp)+' kg',x,y+22);ctx.restore()}}]
         });
       }catch(e){console.warn('Gauge error:',e);}
+
+      // New chart: Pemasukan Fisik vs Tonase Pengolahan
+      destroyChart('olah-fisik');
+      charts['olah-fisik']=new Chart(document.getElementById('olah-fisik'),{
+        type:'bar',
+        data:{
+          labels:top10.map(function(m){return shortName(m.nama)}),
+          datasets:[
+            {label:'Pengadaan GKP',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},
+            {label:'Pemasukan Fisik',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}
+          ]
+        },
+        options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:v=>fmtKg(v)}}}}
+      });
+
+      // New chart: Rendeman per Mitra
+      destroyChart('olah-rendeman');
+      charts['olah-rendeman']=new Chart(document.getElementById('olah-rendeman'),{
+        type:'bar',
+        data:{
+          labels:top10.map(function(m){return shortName(m.nama)}),
+          datasets:[{
+            label:'Rasio (%)',
+            data:top10.map(function(m){return m.rasio}),
+            backgroundColor:top10.map(function(m){return m.rasio>40?'#22c55e':m.rasio>20?'#eab308':'#ef4444'}),
+            borderRadius:4
+          }]
+        },
+        options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%'}}}}
+      });
+
       return;
     }
     const rows=getFilteredRaw(tab);

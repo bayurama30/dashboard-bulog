@@ -243,18 +243,26 @@ class FetchSheetsData extends Command
         [$pengolahanHeader, $data] = $fetch("'dashboard pengolahan'");
         $mitra = []; $tp = $to = $ts = 0.0;
 
+        // Dynamic column mapping - use actual headers from spreadsheet
         $pengolahanColumns = [
             0 => 'nama_mitra',
             1 => 'tonase_pengadaan_gkp',
             2 => 'tonase_pengadaan_setara_beras',
-            3 => 'tonase_pengolahan_gkp',
-            4 => 'tonase_pengolahan_setara_beras',
-            5 => 'sisa_belum_pengolahan_gkp',
-            6 => 'sisa_belum_pengolahan_setara_beras',
+            3 => 'pemasukan_fisik_hgl',
+            4 => 'selisih_tonase_fisik',
+            5 => 'tonase_pengolahan_gkp',
+            6 => 'tonase_pengolahan_setara_beras',
+            7 => 'rendeman_tonak_pengolahan',
+            8 => 'sisa_belum_pengolahan_gkp',
+            9 => 'sisa_belum_pengolahan_setara_beras',
+            10 => 'pengadaan_beras_pso',
+            11 => 'kuantum_gkp_laporan_hasil_giling',
+            12 => 'kuantum_gkp_belum_laporan_hasil_giling',
         ];
 
+        // Build header names from actual spreadsheet headers
         $pengolahanHeaderNames = [];
-        for ($i = 0; $i < 7; $i++) {
+        for ($i = 0; $i < max(count($pengolahanHeader), count($pengolahanColumns)); $i++) {
             $pengolahanHeaderNames[$i] = isset($pengolahanHeader[$i]) && $pengolahanHeader[$i] !== 'Nomor PO'
                 ? $pengolahanHeader[$i]
                 : ($pengolahanColumns[$i] ?? 'col_' . $i);
@@ -264,8 +272,8 @@ class FetchSheetsData extends Command
             try {
                 $nama = $row[0];
                 $tonP = $parseNum($row[1]);
-                $tonO = $parseNum($row[3]);
-                $tonS = $parseNum($row[5]);
+                $tonO = $parseNum($row[5]);
+                $tonS = $parseNum($row[8]);
                 $tp += $tonP; $to += $tonO; $ts += $tonS;
 
                 $rawRow = [];
