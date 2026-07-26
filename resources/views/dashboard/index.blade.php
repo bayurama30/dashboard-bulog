@@ -122,10 +122,10 @@
 @section('scripts')
 <script>
 (function() {
-  const d = DATA;
-  const charts = {};
-  const semesterMonths = {1:['Januari','Februari','Maret','April','Mei','Juni'],2:['Juli','Agustus','September','Oktober','November','Desember']};
-  const MONTH_ORDER = {'Januari':1,'Februari':2,'Maret':3,'April':4,'Mei':5,'Juni':6,'Juli':7,'Agustus':8,'September':9,'Oktober':10,'November':11,'Desember':12};
+  var d = DATA;
+  var charts = {};
+  var semesterMonths = {1:['Januari','Februari','Maret','April','Mei','Juni'],2:['Juli','Agustus','September','Oktober','November','Desember']};
+  var MONTH_ORDER = {'Januari':1,'Februari':2,'Maret':3,'April':4,'Mei':5,'Juni':6,'Juli':7,'Agustus':8,'September':9,'Oktober':10,'November':11,'Desember':12};
 
   function sortMonths(arr){
     return arr.sort(function(a,b){return (MONTH_ORDER[a]||99)-(MONTH_ORDER[b]||99)});
@@ -387,7 +387,7 @@
     chartOrError('olah-rendeman', function(c){return new Chart(c, {type:'bar',data:{labels:olahLabels,datasets:[{label:'Rasio (%)',data:top10.map(function(m){return m.rasio}),backgroundColor:top10.map(function(m){return m.rasio>40?'#22c55e':m.rasio>20?'#eab308':'#ef4444'}),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%'}}}}}})});
 
     var rasio=d.pengolahan.rasio, gto=d.pengolahan.total_olah, gtp=d.pengolahan.total_pengadaan;
-    chartOrError('olah-gauge', function(c){return new Chart(c, {type:'doughnut',data:{labels:['Diolah','Sisa'],datasets:[{data:[rasio,100-rasio],backgroundColor:['#eab308','#2a2d3a'],borderWidth:0,circumference:180,rotation:270}]},options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12,usePointStyle:true}},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%'}}}}},plugins:[{id:'gaugeTextMain',afterDraw:function(chart){var ctx3=chart.ctx,ca3=chart.chartArea;var x3=(ca3.left+ca3.right)/2,y3=(ca3.top+ca3.bottom)/2.6;ctx3.save();ctx3.font='bold 32px -apple-system,sans-serif';ctx3.fillStyle='#e1e4ed';ctx3.textAlign='center';ctx3.textBaseline='middle';ctx3.fillText(rasio+'%',x3,y3-8);ctx3.font='14px -apple-system,sans-serif';ctx3.fillStyle='#8b90a0';ctx3.fillText('Diolah '+fmtKg(gto)+' / Total '+fmtKg(gtp)+' kg',x3,y3+22);ctx3.restore()}}]}})});
+    chartOrError('olah-gauge', function(c){var gaugePlugin={id:'gaugeTextMain',afterDraw:function(chart){var ctx3=chart.ctx,ca3=chart.chartArea;var x3=(ca3.left+ca3.right)/2,y3=(ca3.top+ca3.bottom)/2.6;ctx3.save();ctx3.font='bold 32px -apple-system,sans-serif';ctx3.fillStyle='#e1e4ed';ctx3.textAlign='center';ctx3.textBaseline='middle';ctx3.fillText(rasio+'%',x3,y3-8);ctx3.font='14px -apple-system,sans-serif';ctx3.fillStyle='#8b90a0';ctx3.fillText('Diolah '+fmtKg(gto)+' / Total '+fmtKg(gtp)+' kg',x3,y3+22);ctx3.restore()}};return new Chart(c, {type:'doughnut',data:{labels:['Diolah','Sisa'],datasets:[{data:[rasio,100-rasio],backgroundColor:['#eab308','#2a2d3a'],borderWidth:0,circumference:180,rotation:270}]},options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12,usePointStyle:true}},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%'}}}}},plugins:[gaugePlugin]})});
 
     if(d.gkp.raw) populateFilters('gkp');
     if(d.jagung.raw) populateFilters('jagung');

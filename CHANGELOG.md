@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Export CSV**: Format angka diperbaiki (hapus titik pemisah ribuan)
 - **Export PDF**: Semua kolom dari spreadsheet ditampilkan, filter yang diterapkan ditampilkan di atas tabel
 
+### Fixed
+- **Grafik tidak tampil**: Semua chart Chart.js tidak render karena error JavaScript syntax
+  - Perbaiki struktur plugin `gaugeTextMain` di grafik `olah-gauge` (dipindahkan ke variabel terpisah dengan struktur `{id, afterDraw}`)
+  - Ganti `const` ke `var` di dalam IIFE untuk kompatibilitas browser
+- **JavaScript error**: `missing ) after argument list` di script block mencegah `drawAll()` dieksekusi
+
 ### Removed
 - **Tab Ringkasan Eksekutif**: Dihapus dari dashboard
   - Method `summaryData()` di controller
