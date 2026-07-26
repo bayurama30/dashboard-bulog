@@ -1,0 +1,9 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "providers": ["php"],
+  "packages": {
+    "php": {
+      "extensions": ["gd"]
+    }
+  }
+}
