@@ -99,7 +99,7 @@
       <h3>Detail per Mitra (<span id="olah-mitra-count">{{ count($data['pengolahan']['mitra']) }}</span> mitra)</h3>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Mitra</th><th>Pengadaan GKP (kg)</th><th>Pemasukan Fisik (kg)</th><th>Tonase Olah GKP (kg)</th><th>Sisa (kg)</th><th>Rasio</th></tr></thead>
+          <thead><tr><th>Mitra</th><th>Pengadaan (kg)</th><th>Diolah (kg)</th><th>Sisa (kg)</th><th>Rasio (%)</th></tr></thead>
           <tbody id="olah-tbody">
             @foreach($data['pengolahan']['mitra'] as $m)
             <tr>
@@ -176,70 +176,62 @@
   // --- Expose to global for inline onchange handlers ---
   window.applyFilters = function(tab){
     if(tab==='pengolahan'){
-      const q=document.getElementById('olah-search').value.toLowerCase();
-      const mitra=d.pengolahan.mitra;
-      const filtered=q?mitra.filter(m=>m.nama.toLowerCase().includes(q)):mitra;
-      const tp=filtered.reduce((s,m)=>s+m.pengadaan,0);
-      const to=filtered.reduce((s,m)=>s+m.pengolahan,0);
-      const ts=filtered.reduce((s,m)=>s+m.sisa,0);
-      const rasio=tp>0?Math.round(to/tp*1000)/10:0;
+      var q=document.getElementById('olah-search').value.toLowerCase();
+      var mitra=d.pengolahan.mitra;
+      var filtered=q?mitra.filter(function(m){return m.nama.toLowerCase().indexOf(q)!==-1}):mitra;
+      var tp=filtered.reduce(function(s,m){return s+m.pengadaan},0);
+      var to=filtered.reduce(function(s,m){return s+m.pengolahan},0);
+      var ts=filtered.reduce(function(s,m){return s+m.sisa},0);
+      var rasio=tp>0?Math.round(to/tp*1000)/10:0;
       document.getElementById('olah-total-pengadaan').textContent=fmtNum(tp);
       document.getElementById('olah-total-diolah').textContent=fmtNum(to);
       document.getElementById('olah-total-sisa').textContent=fmtNum(ts);
       document.getElementById('olah-rasio').textContent=rasio+'%';
       document.getElementById('olah-mitra-count').textContent=filtered.length;
-      const tbody=document.getElementById('olah-tbody');
-      tbody.innerHTML=filtered.map(m=>{
-        let c=m.rasio>40?'var(--green)':m.rasio>20?'var(--yellow)':'var(--red)';
-        return '<tr><td>'+m.nama+'</td><td>'+fmtNum(m.pengadaan)+'</td><td>'+fmtNum(m.pengolahan)+'</td><td>'+fmtNum(m.sisa)+'</td><td style="color:'+c+';font-weight:700">'+m.rasio+'%</td></tr>';
-      }).join('');
-      const top10=filtered.slice(0,10);
-      destroyChart('olah-mitra');
-      charts['olah-mitra']=new Chart(document.getElementById('olah-mitra'),{
-        type:'bar',data:{labels:top10.map(m=>shortName(m.nama)),datasets:[
-          {label:'Pengadaan',data:top10.map(m=>m.pengadaan),backgroundColor:'#6366f1',borderRadius:4},
-          {label:'Diolah',data:top10.map(m=>m.pengolahan),backgroundColor:'#22c55e',borderRadius:4}
-        ]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:v=>fmtKg(v)}}}}
+      var tbody=document.getElementById('olah-tbody');
+      tbody.innerHTML='';
+      filtered.forEach(function(m){
+        var rVal = typeof m.rasio==='number' ? m.rasio : 0;
+        var c = rVal>40?'var(--green)':rVal>20?'var(--yellow)':'var(--red)';
+        var tr=document.createElement('tr');
+        tr.innerHTML='<td>'+m.nama+'</td><td>'+fmtNum(m.pengadaan)+'</td><td>'+fmtNum(m.pengolahan)+'</td><td>'+fmtNum(m.sisa)+'</td><td style="color:'+c+';font-weight:700">'+rVal+'%</td>';
+        tbody.appendChild(tr);
       });
+      var top10=filtered.slice(0,10);
+      var labels=top10.map(function(m){return shortName(m.nama)});
+      destroyChart('olah-mitra');
+      try{
+        charts['olah-mitra']=new Chart(document.getElementById('olah-mitra'),{
+          type:'bar',data:{labels:labels,datasets:[
+            {label:'Pengadaan',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},
+            {label:'Diolah',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}
+          ]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}
+        });
+      }catch(e){console.warn('olah-mitra error:',e);}
       destroyChart('olah-gauge');
       try{
         charts['olah-gauge']=new Chart(document.getElementById('olah-gauge'),{
           type:'doughnut',data:{labels:['Diolah','Sisa'],datasets:[{data:[rasio,100-rasio],backgroundColor:['#eab308','#2a2d3a'],borderWidth:0,circumference:180,rotation:270}]},
           options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12,usePointStyle:true}},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%'}}}}},
-          plugins:[{id:'gaugeText',afterDraw(chart){const{ctx,chartArea:{top,bottom,left,right}}=chart;const x=(left+right)/2,y=(top+bottom)/2.6;ctx.save();ctx.font='bold 32px -apple-system,sans-serif';ctx.fillStyle='#e1e4ed';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(rasio+'%',x,y-8);ctx.font='14px -apple-system,sans-serif';ctx.fillStyle='#8b90a0';ctx.fillText('Diolah '+fmtKg(to)+' / Total '+fmtKg(tp)+' kg',x,y+22);ctx.restore()}}]
+          plugins:[{id:'gaugeText2',afterDraw:function(chart){var ctx2=chart.ctx,ca2=chart.chartArea;var x2=(ca2.left+ca2.right)/2,y2=(ca2.top+ca2.bottom)/2.6;ctx2.save();ctx2.font='bold 32px -apple-system,sans-serif';ctx2.fillStyle='#e1e4ed';ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillText(rasio+'%',x2,y2-8);ctx2.font='14px -apple-system,sans-serif';ctx2.fillStyle='#8b90a0';ctx2.fillText('Diolah '+fmtKg(to)+' / Total '+fmtKg(tp)+' kg',x2,y2+22);ctx2.restore()}}]
         });
-      }catch(e){console.warn('Gauge error:',e);}
-
-      // New chart: Pemasukan Fisik vs Tonase Pengolahan
+      }catch(e){console.warn('olah-gauge error:',e);}
       destroyChart('olah-fisik');
-      charts['olah-fisik']=new Chart(document.getElementById('olah-fisik'),{
-        type:'bar',
-        data:{
-          labels:top10.map(function(m){return shortName(m.nama)}),
-          datasets:[
+      try{
+        charts['olah-fisik']=new Chart(document.getElementById('olah-fisik'),{
+          type:'bar',data:{labels:labels,datasets:[
             {label:'Pengadaan GKP',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},
             {label:'Pemasukan Fisik',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}
-          ]
-        },
-        options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:v=>fmtKg(v)}}}}
-      });
-
-      // New chart: Rendeman per Mitra
+          ]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}
+        });
+      }catch(e){console.warn('olah-fisik error:',e);}
       destroyChart('olah-rendeman');
-      charts['olah-rendeman']=new Chart(document.getElementById('olah-rendeman'),{
-        type:'bar',
-        data:{
-          labels:top10.map(function(m){return shortName(m.nama)}),
-          datasets:[{
-            label:'Rasio (%)',
-            data:top10.map(function(m){return m.rasio}),
-            backgroundColor:top10.map(function(m){return m.rasio>40?'#22c55e':m.rasio>20?'#eab308':'#ef4444'}),
-            borderRadius:4
-          }]
-        },
-        options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%'}}}}
-      });
-
+      try{
+        charts['olah-rendeman']=new Chart(document.getElementById('olah-rendeman'),{
+          type:'bar',data:{labels:labels,datasets:[{label:'Rasio (%)',data:top10.map(function(m){return m.rasio}),backgroundColor:top10.map(function(m){return m.rasio>40?'#22c55e':m.rasio>20?'#eab308':'#ef4444'}),borderRadius:4}]},
+          options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%'}}}}}
+        });
+      }catch(e){console.warn('olah-rendeman error:',e);}
       return;
     }
     const rows=getFilteredRaw(tab);
@@ -389,11 +381,13 @@
     chartOrError('beras-wilayah', function(c){return new Chart(c, {type:'doughnut',data:{labels:Object.keys(d.beras_pso.by_wilayah).map(function(w){return shortName(w)}),datasets:[{data:Object.values(d.beras_pso.by_wilayah),backgroundColor:['#3b82f6','#60a5fa','#93c5fd','#bfdbfe'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}})});
 
     var top10 = d.pengolahan.mitra.slice(0,10);
-    chartOrError('olah-mitra', function(c){return new Chart(c, {type:'bar',data:{labels:top10.map(function(m){return shortName(m.nama)}),datasets:[{label:'Pengadaan',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},{label:'Diolah',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
+    var olahLabels = top10.map(function(m){return shortName(m.nama)});
+    chartOrError('olah-mitra', function(c){return new Chart(c, {type:'bar',data:{labels:olahLabels,datasets:[{label:'Pengadaan',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},{label:'Diolah',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
+    chartOrError('olah-fisik', function(c){return new Chart(c, {type:'bar',data:{labels:olahLabels,datasets:[{label:'Pengadaan GKP',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},{label:'Pemasukan Fisik',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
+    chartOrError('olah-rendeman', function(c){return new Chart(c, {type:'bar',data:{labels:olahLabels,datasets:[{label:'Rasio (%)',data:top10.map(function(m){return m.rasio}),backgroundColor:top10.map(function(m){return m.rasio>40?'#22c55e':m.rasio>20?'#eab308':'#ef4444'}),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%'}}}}}})});
+
     var rasio=d.pengolahan.rasio, gto=d.pengolahan.total_olah, gtp=d.pengolahan.total_pengadaan;
-    try{
-      charts['olah-gauge'] = new Chart(document.getElementById('olah-gauge'), {type:'doughnut',data:{labels:['Diolah','Sisa'],datasets:[{data:[rasio,100-rasio],backgroundColor:['#eab308','#2a2d3a'],borderWidth:0,circumference:180,rotation:270}]},      options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12,usePointStyle:true}},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%'}}}}},plugins:[{id:'gaugeText',afterDraw:function(chart){var ctx=chart.ctx,ca=chart.chartArea;var x=(ca.left+ca.right)/2,y=(ca.top+ca.bottom)/2.6;ctx.save();ctx.font='bold 32px -apple-system,sans-serif';ctx.fillStyle='#e1e4ed';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(rasio+'%',x,y-8);ctx.font='14px -apple-system,sans-serif';ctx.fillStyle='#8b90a0';ctx.fillText('Diolah '+fmtKg(gto)+' / Total '+fmtKg(gtp)+' kg',x,y+22);ctx.restore()}}]});
-    }catch(e){console.warn('Gauge error:',e);}
+    chartOrError('olah-gauge', function(c){return new Chart(c, {type:'doughnut',data:{labels:['Diolah','Sisa'],datasets:[{data:[rasio,100-rasio],backgroundColor:['#eab308','#2a2d3a'],borderWidth:0,circumference:180,rotation:270}]},options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12,usePointStyle:true}},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%'}}}}},plugins:[{id:'gaugeTextMain',afterDraw:function(chart){var ctx3=chart.ctx,ca3=chart.chartArea;var x3=(ca3.left+ca3.right)/2,y3=(ca3.top+ca3.bottom)/2.6;ctx3.save();ctx3.font='bold 32px -apple-system,sans-serif';ctx3.fillStyle='#e1e4ed';ctx3.textAlign='center';ctx3.textBaseline='middle';ctx3.fillText(rasio+'%',x3,y3-8);ctx3.font='14px -apple-system,sans-serif';ctx3.fillStyle='#8b90a0';ctx3.fillText('Diolah '+fmtKg(gto)+' / Total '+fmtKg(gtp)+' kg',x3,y3+22);ctx3.restore()}}]}})});
 
     if(d.gkp.raw) populateFilters('gkp');
     if(d.jagung.raw) populateFilters('jagung');
