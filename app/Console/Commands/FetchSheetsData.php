@@ -29,7 +29,7 @@ class FetchSheetsData extends Command
             $this->line('');
             $this->line('Or run: ./setup-google-credentials.sh');
             $this->line('');
-            $this->line('Spreadsheet: https://docs.google.com/spreadsheets/d/16G1AOk9NPkr8qvOmz22bW00V9_WsKWPE66izsoz038E/edit');
+            $this->line('Spreadsheet: ' . config('google.spreadsheet_url', 'https://docs.google.com/spreadsheets/d/16G1AOk9NPkr8qvOmz22bW00V9_WsKWPE66izsoz038E/edit'));
             $this->line('Sheets: data dashboard GKP, data dashboard Jagung, data dashboard beras PSO, dashboard pengolahan');
             $this->line('');
             $this->line('Using cached data instead...');
@@ -49,7 +49,13 @@ class FetchSheetsData extends Command
         $client->addScope(Sheets::SPREADSHEETS_READONLY);
         $service = new Sheets($client);
 
-        $sid = '16G1AOk9NPkr8qvOmz22bW00V9_WsKWPE66izsoz038E';
+        $sid = config('google.spreadsheet_id', '16G1AOk9NPkr8qvOmz22bW00V9_WsKWPE66izsoz038E');
+        $sheets = config('google.sheets', [
+            'gkp'        => 'data dashboard GKP',
+            'jagung'     => 'data dashboard Jagung',
+            'beras_pso'  => 'data dashboard beras PSO',
+            'pengolahan' => 'dashboard pengolahan',
+        ]);
         $output = storage_path('app/dashboard-data.json');
 
         $sanitizeHeader = function (string $header): string {
@@ -81,7 +87,7 @@ class FetchSheetsData extends Command
         $parseNum = fn(string $s): float => (float) str_replace(['.', ','], ['', '.'], $s);
 
         // === GKP ===
-        [$gkpHeader, $data] = $fetch("'data dashboard GKP'");
+        [$gkpHeader, $data] = $fetch("'{$sheets['gkp']}'");
         $byMonth = []; $byWilayah = []; $byPemasok = []; $raw = [];
 
         // Define column mappings for GKP (based on spreadsheet structure)
@@ -138,7 +144,7 @@ class FetchSheetsData extends Command
         ];
 
         // === JAGUNG ===
-        [$jagungHeader, $data] = $fetch("'data dashboard Jagung'");
+        [$jagungHeader, $data] = $fetch("'{$sheets['jagung']}'");
         $jm = []; $jw = []; $jraw = [];
 
         $jagungColumns = [
@@ -191,7 +197,7 @@ class FetchSheetsData extends Command
         ];
 
         // === BERAS PSO ===
-        [$berasHeader, $data] = $fetch("'data dashboard beras PSO'");
+        [$berasHeader, $data] = $fetch("'{$sheets['beras_pso']}'");
         $bm = []; $bw = []; $braw = [];
 
         $berasColumns = [
@@ -240,8 +246,10 @@ class FetchSheetsData extends Command
         ];
 
         // === PENGOLAHAN ===
-        [$pengolahanHeader, $data] = $fetch("'dashboard pengolahan'");
+        [$pengolahanHeader, $data] = $fetch("'{$sheets['pengolahan']}'");
         $mitra = []; $tp = $to = $ts = 0.0;
+        $tpb = $tob = $tsb = 0.0;
+        $rendemanWeighted = 0.0;
 
         // Dynamic column mapping - use actual headers from spreadsheet
         $pengolahanColumns = [
@@ -272,9 +280,18 @@ class FetchSheetsData extends Command
             try {
                 $nama = $row[0];
                 $tonP = $parseNum($row[1]);
+                $tonPb = $parseNum($row[2]);
                 $tonO = $parseNum($row[5]);
+                $tonOb = $parseNum($row[6]);
                 $tonS = $parseNum($row[8]);
+                $tonSb = $parseNum($row[9]);
                 $tp += $tonP; $to += $tonO; $ts += $tonS;
+                $tpb += $tonPb; $tob += $tonOb; $tsb += $tonSb;
+
+                // Parse rendeman_tonak_pengolahan (column 7, format: "51,05%")
+                $rendemanStr = $row[7] ?? '';
+                $rendemanVal = (float) str_replace(['.', ',', '%'], ['', '.', ''], $rendemanStr);
+                $rendemanWeighted += $rendemanVal * $tonP;
 
                 $rawRow = [];
                 for ($i = 0; $i < count($row); $i++) {
@@ -283,9 +300,13 @@ class FetchSheetsData extends Command
                 }
                 $rawRow['nama'] = $nama;
                 $rawRow['pengadaan'] = $tonP;
+                $rawRow['pengadaan_beras'] = $tonPb;
                 $rawRow['pengolahan'] = $tonO;
+                $rawRow['pengolahan_beras'] = $tonOb;
                 $rawRow['sisa'] = $tonS;
+                $rawRow['sisa_beras'] = $tonSb;
                 $rawRow['rasio'] = $tonP > 0 ? round($tonO / $tonP * 100, 1) : 0;
+                $rawRow['rendeman'] = $rendemanVal;
                 $mitra[] = $rawRow;
             } catch (\Throwable) {}
         }
@@ -294,9 +315,13 @@ class FetchSheetsData extends Command
             'mitra' => $mitra,
             'header' => array_values($pengolahanHeaderNames),
             'total_pengadaan' => $tp,
+            'total_pengadaan_beras' => $tpb,
             'total_olah' => $to,
+            'total_olah_beras' => $tob,
             'total_sisa' => $ts,
+            'total_sisa_beras' => $tsb,
             'rasio' => $tp > 0 ? round($to / $tp * 100, 1) : 0,
+            'avg_rendeman' => $tp > 0 ? round($rendemanWeighted / $tp, 1) : 0,
         ];
 
         $outputData = [

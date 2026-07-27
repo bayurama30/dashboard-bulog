@@ -84,11 +84,15 @@
     <button class="btn-export" onclick="exportData('xlsx','pengolahan')">📊 Excel</button>
     <button class="btn-export" onclick="exportData('pdf','pengolahan')">📄 PDF</button>
   </div>
-  <div class="kpi-grid">
-    <div class="kpi"><div class="label">Total GKP Diadakan</div><div class="value" style="color:var(--accent)" id="olah-total-pengadaan">{{ number_format($data['pengolahan']['total_pengadaan'], 0, ',', '.') }}</div><div class="sub">kg</div></div>
-    <div class="kpi"><div class="label">Sudah Diolah</div><div class="value" style="color:var(--green)" id="olah-total-diolah">{{ number_format($data['pengolahan']['total_olah'], 0, ',', '.') }}</div><div class="sub">kg</div></div>
-    <div class="kpi"><div class="label">Sisa Belum Diolah</div><div class="value" style="color:var(--red)" id="olah-total-sisa">{{ number_format($data['pengolahan']['total_sisa'], 0, ',', '.') }}</div><div class="sub">kg</div></div>
-    <div class="kpi"><div class="label">Rasio Pengolahan</div><div class="value" style="color:var(--yellow)" id="olah-rasio">{{ $data['pengolahan']['rasio'] }}%</div><div class="sub">%</div></div>
+  <div class="kpi-grid pengolahan-kpi">
+    <div class="kpi"><div class="label">Pengadaan GKP</div><div class="value" style="color:var(--accent)" id="olah-total-pengadaan">{{ number_format($data['pengolahan']['total_pengadaan'], 0, ',', '.') }}</div><div class="sub">kg</div></div>
+    <div class="kpi"><div class="label">Pengadaan Setara Beras</div><div class="value" style="color:var(--blue)" id="olah-total-pengadaan-beras">{{ number_format($data['pengolahan']['total_pengadaan_beras'] ?? 0, 0, ',', '.') }}</div><div class="sub">kg</div></div>
+    <div class="kpi"><div class="label">Pengolahan GKP</div><div class="value" style="color:var(--green)" id="olah-total-diolah">{{ number_format($data['pengolahan']['total_olah'], 0, ',', '.') }}</div><div class="sub">kg</div></div>
+    <div class="kpi"><div class="label">Pengolahan Setara Beras</div><div class="value" style="color:var(--orange)" id="olah-total-diolah-beras">{{ number_format($data['pengolahan']['total_olah_beras'] ?? 0, 0, ',', '.') }}</div><div class="sub">kg</div></div>
+    <div class="kpi"><div class="label">Belum Pengolahan GKP</div><div class="value" style="color:var(--red)" id="olah-total-sisa">{{ number_format($data['pengolahan']['total_sisa'], 0, ',', '.') }}</div><div class="sub">kg</div></div>
+    <div class="kpi"><div class="label">Belum Pengolahan Setara Beras</div><div class="value" style="color:var(--red)" id="olah-total-sisa-beras">{{ number_format($data['pengolahan']['total_sisa_beras'] ?? 0, 0, ',', '.') }}</div><div class="sub">kg</div></div>
+    <div class="kpi"><div class="label">Rasio</div><div class="value" style="color:var(--yellow)" id="olah-rasio">{{ $data['pengolahan']['rasio'] }}%</div><div class="sub">%</div></div>
+    <div class="kpi"><div class="label">Rendaman Tonak</div><div class="value" style="color:var(--purple)" id="olah-rendaman">{{ ($data['pengolahan']['avg_rendeman'] ?? 0) }}%</div><div class="sub">avg</div></div>
   </div>
   <div class="chart-grid">
     <div class="chart-card"><h3>Perbandingan Pengadaan vs Diolah (Top 10)</h3><div class="chart-wrap"><canvas id="olah-mitra"></canvas></div></div>
@@ -132,7 +136,12 @@
   }
 
   function dataKey(tab){return tab==='beras'?'beras_pso':tab}
-  function fmtNum(n){return n.toLocaleString('id-ID')}
+  function fmtNum(n){
+    if(n >= 1000000000) return (n/1000000000).toFixed(1).replace(/\.0$/,'')+'B';
+    if(n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+    if(n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,'')+'K';
+    return n.toLocaleString('id-ID');
+  }
   function shortName(n){return n.replace('CV. ','').replace('PD. ','').replace('KOMPLEKS PERGUDANGAN ','')}
 
   function getFilteredRaw(tab){
@@ -180,13 +189,21 @@
       var mitra=d.pengolahan.mitra;
       var filtered=q?mitra.filter(function(m){return m.nama.toLowerCase().indexOf(q)!==-1}):mitra;
       var tp=filtered.reduce(function(s,m){return s+m.pengadaan},0);
+      var tpb=filtered.reduce(function(s,m){return s+(m.pengadaan_beras||0)},0);
       var to=filtered.reduce(function(s,m){return s+m.pengolahan},0);
+      var tob=filtered.reduce(function(s,m){return s+(m.pengolahan_beras||0)},0);
       var ts=filtered.reduce(function(s,m){return s+m.sisa},0);
+      var tsb=filtered.reduce(function(s,m){return s+(m.sisa_beras||0)},0);
       var rasio=tp>0?Math.round(to/tp*1000)/10:0;
+      var rendeman=tp>0?Math.round(filtered.reduce(function(s,m){return s+((m.rendeman||0)*m.pengadaan)},0)/tp,1):0;
       document.getElementById('olah-total-pengadaan').textContent=fmtNum(tp);
+      document.getElementById('olah-total-pengadaan-beras').textContent=fmtNum(tpb);
       document.getElementById('olah-total-diolah').textContent=fmtNum(to);
+      document.getElementById('olah-total-diolah-beras').textContent=fmtNum(tob);
       document.getElementById('olah-total-sisa').textContent=fmtNum(ts);
+      document.getElementById('olah-total-sisa-beras').textContent=fmtNum(tsb);
       document.getElementById('olah-rasio').textContent=rasio+'%';
+      document.getElementById('olah-rendaman').textContent=rendeman+'%';
       document.getElementById('olah-mitra-count').textContent=filtered.length;
       var tbody=document.getElementById('olah-tbody');
       tbody.innerHTML='';
@@ -396,39 +413,95 @@
 
   drawAll();
 
+  // Format pengolahan KPI cards with compact numbers on load
+  (function formatPengolahanKPIs(){
+    var ids = ['olah-total-pengadaan','olah-total-pengadaan-beras','olah-total-diolah','olah-total-diolah-beras','olah-total-sisa','olah-total-sisa-beras'];
+    ids.forEach(function(id){
+      var el = document.getElementById(id);
+      if(!el) return;
+      var txt = el.textContent.trim();
+      var num = parseFloat(txt.replace(/\./g,'').replace(/,/g,'.'));
+      if(!isNaN(num)) el.textContent = fmtNum(num);
+    });
+  })();
+
   window.exportData = function(type, tab){
-    var filters = {};
-    var prefix = tab === 'beras_pso' ? 'beras' : tab;
+    var key = tab === 'beras_pso' ? 'beras_pso' : tab;
+    var tabData = d[key];
+    if(!tabData){ showToast('error','Error','Data tidak ditemukan'); return; }
 
-    if(tab === 'gkp'){
-      filters.bulan = document.getElementById('gkp-filter-bulan').value;
-      filters.semester = document.getElementById('gkp-filter-semester').value;
-      filters.wilayah = document.getElementById('gkp-filter-wilayah').value;
-      filters.pemasok = document.getElementById('gkp-filter-pemasok').value;
-    } else if(tab === 'jagung'){
-      filters.bulan = document.getElementById('jagung-filter-bulan').value;
-      filters.semester = document.getElementById('jagung-filter-semester').value;
-      filters.wilayah = document.getElementById('jagung-filter-wilayah').value;
-    } else if(tab === 'beras_pso'){
-      filters.bulan = document.getElementById('beras-filter-bulan').value;
-      filters.semester = document.getElementById('beras-filter-semester').value;
-      filters.gudang = document.getElementById('beras-filter-gudang').value;
-    } else if(tab === 'pengolahan'){
-      filters.search = document.getElementById('olah-search').value;
+    function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+    // Sanitize header to match raw data keys (mirrors PHP sanitizeHeader)
+    function sanitizeHeader(h){
+      return String(h).trim().toLowerCase().replace(/[^a-z0-9\s_]/g,'').replace(/\s+/g,'_');
     }
 
-    var filterStr = '';
-    var params = [];
-    for(var key in filters){
-      if(filters[key]){
-        params.push(key + '=' + encodeURIComponent(filters[key]));
+    var headers = (tabData.header || []).map(function(h){ return h.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase()}); });
+    var raw = [];
+    if(tab === 'pengolahan'){
+      raw = (tabData.mitra || []).map(function(m){
+        var row = {};
+        (tabData.header||[]).forEach(function(h,i){ row[sanitizeHeader(h)] = m[sanitizeHeader(h)] || ''; });
+        return row;
+      });
+      var q = document.getElementById('olah-search').value.toLowerCase();
+      if(q) raw = raw.filter(function(r){ return (r[sanitizeHeader('nama_mitra')]||'').toLowerCase().indexOf(q)!==-1; });
+    } else {
+      raw = getFilteredRaw(key);
+    }
+
+    if(type === 'csv'){
+      var csvRows = [headers.join(',')];
+      raw.forEach(function(row){
+        var vals = (tabData.header||[]).map(function(h){ var v=row[sanitizeHeader(h)]||''; return '"'+String(v).replace(/"/g,'""')+'"'; });
+        csvRows.push(vals.join(','));
+      });
+      var blob = new Blob(['\uFEFF'+csvRows.join('\n')], {type:'text/csv;charset=utf-8;'});
+      var a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='dashboard-'+tab+'.csv'; a.click();
+    } else if(type === 'xlsx'){
+      // Use server-side export for real .xlsx format (via PhpSpreadsheet)
+      var exportTab = tab;
+      var params = new URLSearchParams();
+
+      if(tab === 'pengolahan'){
+        var q = document.getElementById('olah-search').value;
+        if(q) params.set('search', q);
+      } else {
+        var prefix = tab === 'beras_pso' ? 'beras' : tab;
+        var bulan = document.getElementById(prefix+'-filter-bulan').value;
+        var semester = document.getElementById(prefix+'-filter-semester').value;
+        if(bulan) params.set('bulan', bulan);
+        if(semester) params.set('semester', semester);
+
+        if(tab === 'gkp'){
+          var wil = document.getElementById(prefix+'-filter-wilayah').value;
+          var pem = document.getElementById(prefix+'-filter-pemasok').value;
+          if(wil) params.set('wilayah', wil);
+          if(pem) params.set('pemasok', pem);
+        } else if(tab === 'jagung'){
+          var wil = document.getElementById(prefix+'-filter-wilayah').value;
+          if(wil) params.set('wilayah', wil);
+        } else if(tab === 'beras_pso'){
+          var gud = document.getElementById(prefix+'-filter-gudang').value;
+          if(gud) params.set('gudang', gud);
+        }
       }
-    }
-    if(params.length > 0){
-      filterStr = '?' + params.join('&');
-    }
 
-    window.open('/export/' + type + '/' + tab + filterStr, '_blank');
+      var url = '/export/xlsx/' + exportTab;
+      if(params.toString()) url += '?' + params.toString();
+      window.location.href = url;
+    } else if(type === 'pdf'){
+      var w = window.open('','_blank');
+      var html = '<html><head><title>Dashboard '+esc(tab)+'</title><style>body{font-family:Arial;margin:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:12px}th{background:#f3f4f6;font-weight:bold}</style></head><body>';
+      html += '<h1>Dashboard Bulog - '+esc(tab.toUpperCase())+'</h1><p>'+new Date().toLocaleString('id-ID')+'</p>';
+      html += '<table><tr>'+headers.map(function(h){return '<th>'+esc(h)+'</th>'}).join('')+'</tr>';
+      raw.forEach(function(row){
+        html += '<tr>'+(tabData.header||[]).map(function(h){return '<td>'+esc(row[sanitizeHeader(h)]||'')+'</td>'}).join('')+'</tr>';
+      });
+      html += '</table></body></html>';
+      w.document.write(html); w.document.close(); w.print();
+    }
   };
 })();
 </script>

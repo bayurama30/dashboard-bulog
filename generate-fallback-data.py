@@ -35,16 +35,20 @@ beras = {
 
 pengolahan = {
     "mitra": [
-        {"nama":"CV. Berkah Abadi CMS","pengadaan":25000000,"pengolahan":12000000,"sisa":13000000,"rasio":48.0},
-        {"nama":"CV. Mitra Tani","pengadaan":20000000,"pengolahan":8000000,"sisa":12000000,"rasio":40.0},
-        {"nama":"PD. Sumber Pangan","pengadaan":18000000,"pengolahan":6000000,"sisa":12000000,"rasio":33.3},
-        {"nama":"CV. Agro Mandiri","pengadaan":15000000,"pengolahan":5000000,"sisa":10000000,"rasio":33.3},
-        {"nama":"CV. Karya Tani","pengadaan":12000000,"pengolahan":4000000,"sisa":8000000,"rasio":33.3},
+        {"nama":"CV. Berkah Abadi CMS","pengadaan":25000000,"pengadaan_beras":12500000,"pengolahan":12000000,"pengolahan_beras":6000000,"sisa":13000000,"sisa_beras":6500000,"rasio":48.0,"rendeman":51.1},
+        {"nama":"CV. Mitra Tani","pengadaan":20000000,"pengadaan_beras":10000000,"pengolahan":8000000,"pengolahan_beras":4000000,"sisa":12000000,"sisa_beras":6000000,"rasio":40.0,"rendeman":51.1},
+        {"nama":"PD. Sumber Pangan","pengadaan":18000000,"pengadaan_beras":9000000,"pengolahan":6000000,"pengolahan_beras":3000000,"sisa":12000000,"sisa_beras":6000000,"rasio":33.3,"rendeman":51.1},
+        {"nama":"CV. Agro Mandiri","pengadaan":15000000,"pengadaan_beras":7500000,"pengolahan":5000000,"pengolahan_beras":2500000,"sisa":10000000,"sisa_beras":5000000,"rasio":33.3,"rendeman":51.1},
+        {"nama":"CV. Karya Tani","pengadaan":12000000,"pengadaan_beras":6000000,"pengolahan":4000000,"pengolahan_beras":2000000,"sisa":8000000,"sisa_beras":4000000,"rasio":33.3,"rendeman":51.1},
     ],
     "total_pengadaan": 108662094,
+    "total_pengadaan_beras": 54331047,
     "total_olah": 37466468,
+    "total_olah_beras": 18733234,
     "total_sisa": 66196804,
-    "rasio": 34.5
+    "total_sisa_beras": 33098402,
+    "rasio": 34.5,
+    "avg_rendeman": 51.1
 }
 
 output = {

@@ -2,61 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
 ### Added
-- **Export Data**: Fitur export data ke tiga format (CSV, Excel, PDF)
-  - Export dengan filter (bulan, wilayah, pemasok, semester, gudang)
-  - Export hanya data mentah lengkap dari spreadsheet
-  - Format Excel dengan kolom kuantum sebagai format number
-  - Header yang di-bold dan berwarna di export Excel
-  - Auto-size kolom dan freeze header row di Excel
-- **Refresh Data**: Perbaikan error handling dan pesan error yang jelas
-  - Script setup kredensial Google (`setup-google-credentials.sh`)
-  - Script OAuth untuk mendapatkan refresh token (`get-refresh-token.py`)
-  - Error message informatif ketika kredensial Google tidak tersedia
+- **Rendaman Tonak KPI card** di tab Pengolahan — menampilkan rata-rata rendaman tonak pengolahan (weighted average) per mitra.
+- **Sisa Beras KPI card** di tab Pengolahan — menampilkan total sisa belum pengolahan setara beras.
+- **Rendeman numerik** ke data mitra di `FetchSheetsData.php` — memungkinkan perhitungan rata-rata tertimbang di JavaScript saat filter diterapkan.
+- **`avg_rendeman`** ke output data pengolahan di `FetchSheetsData.php`.
+- **`GOOGLE_SPREADSHEET_ID`** environment variable di `.env` dan `.env.example`.
+- **`config/google.php`** — file konfigurasi terpusat untuk spreadsheet ID dan sheet names.
+- **`CHANGELOG.md`** — dokumentasi perubahan proyek.
 
 ### Changed
-- **Command `sheets:fetch`**: 
-  - Menyimpan semua kolom dari spreadsheet (bukan hanya subset)
-  - Menyimpan header spreadsheet ke data JSON
-  - Mapping kolom berdasarkan posisi di spreadsheet
-- **Export Excel**: 
-  - Semua nilai disimpan sebagai string untuk mencegah format angka salah
-  - Kolom kuantum dan tonase menggunakan format number (`#,##0`)
-  - Kolom rasio menggunakan format number dengan 1 desimal (`#,##0.0`)
-- **Export CSV**: Format angka diperbaiki (hapus titik pemisah ribuan)
-- **Export PDF**: Semua kolom dari spreadsheet ditampilkan, filter yang diterapkan ditampilkan di atas tabel
+- **Label KPI tab Pengolahan** — semua label diperpendek dan diperjelas:
+  - "Tonase Pengadaan GKP" → "Pengadaan GKP"
+  - "Tonase Pengadaan Setara Beras" → "Pengadaan Setara Beras"
+  - "Tonase Pengolahan GKP" → "Pengolahan GKP"
+  - "Tonase Pengolahan Setara Beras" → "Pengolahan Setara Beras"
+  - "Sisa Belum Pengolahan GKP" → "Belum Pengolahan GKP"
+  - "Sisa Belum Pengolahan Setara Beras" → "Belum Pengolahan Setara Beras"
+- **Angka KPI** — format compact (K/M/B) diterapkan via `fmtNum()` pada page load dan saat filter diterapkan.
+- **Layout kartu KPI tab Pengolahan** — 8 kartu sejajar dalam satu baris dengan ukuran yang diperkecil:
+  - Grid: `repeat(8, 1fr)` di desktop
+  - Font label: 0.52em, font angka: 1.6em
+  - Responsive: 2 kolom di mobile (≤768px)
+- **`fmtNum()` JavaScript** — diperbarui untuk format compact: <1K as-is, K untuk ribu, M untuk juta, B untuk miliar.
+- **`FetchSheetsData.php`** — parsing kolom `rendeman_tonak_pengolahan` (kolom 7) dari format string "51,05%" ke angka.
+- **`fallbackData()` di `DashboardController.php`** — ditambahkan nilai `avg_rendeman`, `total_sisa_beras`, dan `rendeman` per mitra.
+- **`generate-fallback-data.py`** — konsisten dengan struktur data PHP, menambahkan `rendeman` per mitra dan `avg_rendeman`.
+- **`fetch-sheets-data.py`** — menggunakan `os.environ.get('GOOGLE_SPREADSHEET_ID', ...)` untuk spreadsheet ID.
+- **`composer.json`** — typo `laravel/pao` → `laravel/pail`.
 
 ### Fixed
-- **Grafik tidak tampil**: Semua chart Chart.js tidak render karena error JavaScript syntax
-  - Perbaiki struktur plugin `gaugeTextMain` di grafik `olah-gauge` (dipindahkan ke variabel terpisah dengan struktur `{id, afterDraw}`)
-  - Ganti `const` ke `var` di dalam IIFE untuk kompatibilitas browser
-- **JavaScript error**: `missing ) after argument list` di script block mencegah `drawAll()` dieksekusi
+- **XSS vulnerability di `exportPdf()`** — `htmlspecialchars()` ditambahkan pada header, filter label, dan tab heading.
+- **XSS vulnerability di `exportData()` JavaScript** — fungsi `esc()` ditambahkan dan diterapkan pada semua nilai header/sel CSV, XLSX, PDF.
+- **`exportExcel()`** — diganti dari `header()` + `exit` ke `response()->streamDownload()`.
+- **Client-side `exportData()` XLSX** — sekarang redirect ke server-side `/export/xlsx/{tab}?filters` untuk file .xlsx yang sesuai via PhpSpreadsheet.
+- **Duplicate directory** `dashboard-bulog/dashboard-bulog/` — dihapus.
 
 ### Removed
-- **Tab Ringkasan Eksekutif**: Dihapus dari dashboard
-  - Method `summaryData()` di controller
-  - Method `alertsData()` di controller
-  - Tab "📊 Ringkasan" di view
-  - Variabel `SUMMARY` di layout
-  - JavaScript `drawSummary()` di view
-- **Notifikasi/Alert**: Dihapus dari dashboard
-  - Deteksi penurunan kuantum
-  - Deteksi rasio pengolahan rendah
-  - Deteksi mitra rasio rendah
-
-## [1.0.0] - 2026-07-26
-
-### Added
-- Dashboard monitoring Bulog Kancab Ciamis 2026
-- 4 tab: GKP, Jagung, Beras PSO, Pengolahan
-- Data real-time dari Google Sheets
-- Chart.js untuk visualisasi data
-- Filter interaktif (bulan, semester, wilayah, pemasok, gudang)
-- Tema dark/light
-- Refresh data manual
-- Responsive design
+- Direktori duplikat `dashboard-bulog/` (nested).

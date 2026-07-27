@@ -87,15 +87,19 @@ class DashboardController extends Controller
             ],
             'pengolahan' => [
                 'mitra' => [
-                    ['nama' => 'CV. Berkah Abadi CMS', 'pengadaan' => 25000000, 'pengolahan' => 12000000, 'sisa' => 13000000, 'rasio' => 48.0],
-                    ['nama' => 'CV. Mitra Tani', 'pengadaan' => 20000000, 'pengolahan' => 8000000, 'sisa' => 12000000, 'rasio' => 40.0],
-                    ['nama' => 'PD. Sumber Pangan', 'pengadaan' => 18000000, 'pengolahan' => 6000000, 'sisa' => 12000000, 'rasio' => 33.3],
+                    ['nama' => 'CV. Berkah Abadi CMS', 'pengadaan' => 25000000, 'pengadaan_beras' => 12500000, 'pengolahan' => 12000000, 'pengolahan_beras' => 6000000, 'sisa' => 13000000, 'sisa_beras' => 6500000, 'rasio' => 48.0],
+                    ['nama' => 'CV. Mitra Tani', 'pengadaan' => 20000000, 'pengadaan_beras' => 10000000, 'pengolahan' => 8000000, 'pengolahan_beras' => 4000000, 'sisa' => 12000000, 'sisa_beras' => 6000000, 'rasio' => 40.0],
+                    ['nama' => 'PD. Sumber Pangan', 'pengadaan' => 18000000, 'pengadaan_beras' => 9000000, 'pengolahan' => 6000000, 'pengolahan_beras' => 3000000, 'sisa' => 12000000, 'sisa_beras' => 6000000, 'rasio' => 33.3],
                 ],
                 'header' => ['nama_mitra', 'tonase_pengadaan_gkp', 'tonase_pengadaan_setara_beras', 'tonase_pengolahan_gkp', 'tonase_pengolahan_setara_beras', 'sisa_belum_pengolahan_gkp', 'sisa_belum_pengolahan_setara_beras'],
                 'total_pengadaan' => 108662094,
+                'total_pengadaan_beras' => 54331047,
                 'total_olah' => 37466468,
+                'total_olah_beras' => 18733234,
                 'total_sisa' => 66196804,
+                'total_sisa_beras' => 33098402,
                 'rasio' => 34.5,
+                'avg_rendeman' => 51.1,
             ],
         ];
     }
@@ -224,6 +228,26 @@ class DashboardController extends Controller
         return array_values($rows);
     }
 
+    /**
+     * Get raw data for a given tab, handling pengolahan specially
+     * (which stores data in 'mitra' instead of 'raw').
+     */
+    protected function getTabRawData(array $data, string $tab, array $filters): array
+    {
+        if ($tab === 'pengolahan') {
+            $raw = $data['pengolahan']['mitra'] ?? [];
+            $search = $filters['search'] ?? '';
+            if (!empty($search)) {
+                $raw = array_filter($raw, function ($m) use ($search) {
+                    return stripos($m['nama'] ?? '', $search) !== false;
+                });
+            }
+            return array_values($raw);
+        }
+
+        return $this->applyFiltersToRaw($data[$tab]['raw'] ?? [], $tab, $filters);
+    }
+
     protected function exportExcel(array $data, array $summary, string $tab, array $filters = [])
     {
         $spreadsheet = new Spreadsheet();
@@ -238,17 +262,7 @@ class DashboardController extends Controller
                 return $this->humanizeHeader($h);
             }, $header);
 
-            if ($tab === 'pengolahan') {
-                $raw = $data['pengolahan']['mitra'] ?? [];
-                $search = $filters['search'] ?? '';
-                if (!empty($search)) {
-                    $raw = array_filter($raw, function($m) use ($search) {
-                        return stripos($m['nama'] ?? '', $search) !== false;
-                    });
-                }
-            } else {
-                $raw = $this->applyFiltersToRaw($data[$tab]['raw'] ?? [], $tab, $filters);
-            }
+            $raw = $this->getTabRawData($data, $tab, $filters);
 
             foreach ($raw as $row) {
                 $rowData = [];
@@ -323,13 +337,13 @@ class DashboardController extends Controller
             $filename = 'dashboard-' . $tab . '-' . $filterStr . '-' . now()->format('Y-m-d') . '.xlsx';
         }
 
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
-        exit;
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     protected function sanitizeHeader(string $header): string
@@ -362,7 +376,7 @@ class DashboardController extends Controller
             return $this->humanizeHeader($h);
         }, $header);
 
-        $raw = $this->applyFiltersToRaw($data[$tab]['raw'] ?? [], $tab, $filters);
+        $raw = $this->getTabRawData($data, $tab, $filters);
 
         $rows = [];
         if (!empty($headers)) {
@@ -434,14 +448,15 @@ class DashboardController extends Controller
                         'semester' => 'Semester',
                         'wilayah' => 'Wilayah',
                         'pemasok' => 'Pemasok',
-                        'gudang' => 'Gudang'
+                        'gudang' => 'Gudang',
+                        'search' => 'Pencarian',
                     ];
                     $label = $labels[$key] ?? $key;
                     $displayVal = $val;
                     if ($key === 'semester') {
                         $displayVal = 'Semester ' . $val . ' (' . ($val == 1 ? 'Jan-Jun' : 'Jul-Des') . ')';
                     }
-                    $html .= $label . ': ' . $displayVal . '<br>';
+                    $html .= htmlspecialchars($label) . ': ' . htmlspecialchars($displayVal) . '<br>';
                 }
             }
             $html .= '</div>';
@@ -452,12 +467,12 @@ class DashboardController extends Controller
             return $this->humanizeHeader($h);
         }, $header);
 
-        $raw = $this->applyFiltersToRaw($data[$tab]['raw'] ?? [], $tab, $filters);
+        $raw = $this->getTabRawData($data, $tab, $filters);
 
-        $html .= '<h2>' . ucfirst(str_replace('_', ' ', $tab)) . '</h2>';
+        $html .= '<h2>' . htmlspecialchars(ucfirst(str_replace('_', ' ', $tab))) . '</h2>';
         $html .= '<table><tr>';
         foreach ($headers as $h) {
-            $html .= '<th>' . $h . '</th>';
+            $html .= '<th>' . htmlspecialchars($h) . '</th>';
         }
         $html .= '</tr>';
 

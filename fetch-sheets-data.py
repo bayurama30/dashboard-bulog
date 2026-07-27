@@ -65,7 +65,7 @@ MONTH_ORDER = {m: i for i, m in enumerate([
 def sort_by_month(items_dict):
     return dict(sorted(items_dict.items(), key=lambda x: MONTH_ORDER.get(x[0], 99)))
 
-SID = '16G1AOk9NPkr8qvOmz22bW00V9_WsKWPE66izsoz038E'
+SID = os.environ.get('GOOGLE_SPREADSHEET_ID', '16G1AOk9NPkr8qvOmz22bW00V9_WsKWPE66izsoz038E')
 OUTPUT = os.path.join(os.path.dirname(__file__), 'storage', 'app', 'dashboard-data.json')
 
 def fetch(name, range_spec=None):
