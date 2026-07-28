@@ -50,6 +50,8 @@ class ChatController extends Controller
             }
         }
 
+        $pctTarget = round(($gkp['total'] ?? 0) / 74692000 * 100, 1);
+
         return <<<PROMPT
 Kamu adalah asisten data untuk Dashboard Monitoring Bulog Kancab Ciamis 2026.
 Tugasmu menjawab pertanyaan tentang data pengadaan komoditas (GKP, Jagung, Beras PSO) dan pengolahan.
@@ -59,7 +61,7 @@ Jika ditanya hal di luar data dashboard, katakan bahwa kamu hanya bisa menjawab 
 === DATA GKP ===
 Total: {$gkp['total']} kg
 Target: 74.692.000 kg
-Persentase target: " . round(($gkp['total'] ?? 0) / 74692000 * 100, 1) . "%
+Persentase target: {$pctTarget}%
 
 Per Bulan:
 {$format($gkp['by_month'] ?? [])}
