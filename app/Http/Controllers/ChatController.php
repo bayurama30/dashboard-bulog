@@ -14,8 +14,8 @@ class ChatController extends Controller
 
     public function __construct()
     {
-        $this->apiBase = env('OPENROUTER_API_URL', 'https://opencode.ai/zen/v1/chat/completions');
-        $this->apiKey = env('OPENROUTER_API_KEY');
+        $this->apiBase = env('OPENROUTER_API_URL', 'https://opencode.ai/zen/v1');
+        $this->apiKey = env('OPENROUTER_API_KEY', 'sk-tpNNRW4LkKwqpTknPiuHYON67b26dHpOvtnmLjFMovZBNQqO23BLA9DYNCrqJblO');
         $this->model = env('OPENROUTER_MODEL', 'deepseek-v4-flash-free');
     }
 
