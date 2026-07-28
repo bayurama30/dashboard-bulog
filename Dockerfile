@@ -2,7 +2,7 @@ FROM node:22-slim AS node
 
 FROM composer:2 AS composer
 
-FROM php:8.3-fpm
+FROM php:8.4-fpm
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
