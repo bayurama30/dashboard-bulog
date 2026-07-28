@@ -24,15 +24,19 @@
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
     <div class="chart-card"><h3>Progress Target Pengadaan</h3><div class="chart-wrap short"><canvas id="gkp-gauge"></canvas></div></div>
     <div style="display:flex;flex-direction:column;gap:16px;justify-content:center">
-      <div class="kpi" style="text-align:left;padding:24px">
+      <div class="kpi" style="text-align:center;padding:24px">
         <div class="label">Target Pengadaan GKP</div>
-        <div class="value" style="color:var(--yellow);font-size:2.2em">74,692,000</div>
-        <div class="sub">kg</div>
+        <div style="display:flex;align-items:baseline;justify-content:center;gap:6px">
+          <div class="value" style="color:var(--yellow);font-size:2.2em">74,692,000</div>
+          <div style="font-size:1.1em;font-weight:600;color:var(--sub)">kg</div>
+        </div>
       </div>
-      <div class="kpi" style="text-align:left;padding:24px">
+      <div class="kpi" style="text-align:center;padding:24px">
         <div class="label">Total Pengadaan GKP</div>
-        <div class="value" style="color:var(--accent);font-size:2.2em" id="gkp-total">{{ number_format($data['gkp']['total'], 0, ',', '.') }}</div>
-        <div class="sub">kg</div>
+        <div style="display:flex;align-items:baseline;justify-content:center;gap:6px">
+          <div class="value" style="color:var(--accent);font-size:2.2em" id="gkp-total">{{ number_format($data['gkp']['total'], 0, ',', '.') }}</div>
+          <div style="font-size:1.1em;font-weight:600;color:var(--sub)">kg</div>
+        </div>
       </div>
     </div>
   </div>
