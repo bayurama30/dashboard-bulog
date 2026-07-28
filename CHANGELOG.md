@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`composer.json`** — typo `laravel/pao` → `laravel/pail`.
 
 ### Fixed
+- **Warna persentase gauge chart** — angka persentase di GKP gauge chart sekarang mengikuti warna gauge (hijau/ungu/kuning/merah).
 - **Chart tidak muncul** — syntax error pada Chart constructor (kurung `}` hilang sebelum `)`) di 4 chart: `olah-mitra`, `olah-fisik`, `olah-rendeman`, `gkp-mitra`.
 - **Chart click handler tidak berfungsi di Chart.js v4** — diupdate signature onClick callback ke `(event, elements, chart)`.
 - **Monthly chart click filter** — klik bar bulan sekarang otomatis set dropdown bulan dan filter data (sebelumnya hanya toast).

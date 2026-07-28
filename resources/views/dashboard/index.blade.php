@@ -472,7 +472,7 @@
           var ctx=chart.ctx,ca=chart.chartArea;
           var x=(ca.left+ca.right)/2,y=(ca.top+ca.bottom)/2.6;
           ctx.save();
-          ctx.font='bold 36px -apple-system,sans-serif';ctx.fillStyle='#e1e4ed';ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.font='bold 36px -apple-system,sans-serif';ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';
           ctx.fillText(pct+'%',x,y-8);
           ctx.font='13px -apple-system,sans-serif';ctx.fillStyle='#8b90a0';
           ctx.fillText(fmtKg(total)+' / '+fmtKg(GKP_TARGET)+' kg',x,y+22);
