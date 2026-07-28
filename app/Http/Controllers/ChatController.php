@@ -10,7 +10,7 @@ class ChatController extends Controller
 {
     protected $apiBase = 'https://opencode.ai/zen/go/v1';
     protected $apiKey = 'sk-tpNNRW4LkKwqpTknPiuHYON67b26dHpOvtnmLjFMovZBNQqO23BLA9DYNCrqJblO';
-    protected $model = 'mimo-v2.5-free';
+    protected $model = 'mimo-v2.5';
 
     protected function loadData()
     {
