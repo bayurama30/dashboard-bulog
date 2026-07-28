@@ -506,21 +506,28 @@
       var dt=parseTanggal(r.tanggal_po);
       return dt&&isSameDay(dt,today);
     });
+    var grouped={};
+    poToday.forEach(function(r){
+      var key=r.nama_pemasok||'Unknown';
+      if(!grouped[key])grouped[key]={nama:key,wilayah:r.wilayah||'-',qty:0,allHaveIN:true};
+      grouped[key].qty+=r.qty||0;
+      if(!r.no_in||r.no_in.trim()==='')grouped[key].allHaveIN=false;
+    });
+    var rows=Object.values(grouped).sort(function(a,b){return b.qty-a.qty});
     var tbody=document.getElementById('gkp-po-tbody');
     tbody.innerHTML='';
     var totalQty=0;
-    poToday.forEach(function(r,i){
-      totalQty+=r.qty||0;
-      var hasIN=r.no_in&&r.no_in.trim()!=='';
-      var status=hasIN?'Selesai':'Belum Input';
-      var statusColor=hasIN?'var(--green)':'var(--red)';
+    rows.forEach(function(r,i){
+      totalQty+=r.qty;
+      var status=r.allHaveIN?'Selesai':'Belum Input';
+      var statusColor=r.allHaveIN?'var(--green)':'var(--red)';
       var tr=document.createElement('tr');
-      tr.innerHTML='<td style="padding:4px 8px">'+(i+1)+'</td><td style="padding:4px 8px">'+r.nama_pemasok+'</td><td style="padding:4px 8px">'+r.wilayah+'</td><td style="padding:4px 8px">'+fmtNum(r.qty||0)+'</td><td style="padding:4px 8px;color:'+statusColor+';font-weight:600">'+status+'</td>';
+      tr.innerHTML='<td style="padding:4px 8px">'+(i+1)+'</td><td style="padding:4px 8px">'+r.nama+'</td><td style="padding:4px 8px">'+r.wilayah+'</td><td style="padding:4px 8px">'+fmtNum(r.qty)+'</td><td style="padding:4px 8px;color:'+statusColor+';font-weight:600">'+status+'</td>';
       tbody.appendChild(tr);
     });
-    document.getElementById('gkp-po-count').textContent=poToday.length;
+    document.getElementById('gkp-po-count').textContent=rows.length;
     document.getElementById('gkp-po-total').textContent=fmtNum(Math.round(totalQty));
-    if(poToday.length===0){
+    if(rows.length===0){
       var tr=document.createElement('tr');
       tr.innerHTML='<td colspan="5" style="text-align:center;color:var(--sub);padding:12px">Tidak ada PO hari ini</td>';
       tbody.appendChild(tr);
