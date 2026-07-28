@@ -8,8 +8,8 @@ return [
 
     'model' => env('OPENROUTER_MODEL', 'deepseek-v4-flash-free'),
 
-    'max_tokens' => env('AI_MAX_TOKENS', 1024),
+    'max_tokens' => env('AI_MAX_TOKENS', 1536),
 
-    'temperature' => env('AI_TEMPERATURE', 0.7),
+    'temperature' => env('AI_TEMPERATURE', 0.5),
 
 ];

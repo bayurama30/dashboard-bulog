@@ -28,6 +28,11 @@ class ChatController extends Controller
         return null;
     }
 
+    protected function formatNumber($n): string
+    {
+        return number_format($n, 0, ',', '.');
+    }
+
     protected function buildSystemPrompt(): string
     {
         $data = $this->loadData();
@@ -40,20 +45,29 @@ class ChatController extends Controller
         $jagung = $data['jagung'] ?? [];
         $beras = $data['beras_pso'] ?? [];
         $pengolahan = $data['pengolahan'] ?? [];
+        $fetchedAt = $data['fetched_at'] ?? 'N/A';
 
-        $format = fn($arr) => collect($arr ?? [])->map(fn($v, $k) => "- $k: " . number_format($v, 0, ',', '.') . ' kg')->implode("\n");
+        // Format summary data
+        $format = fn($arr) => collect($arr ?? [])->map(fn($v, $k) => "- $k: " . $this->formatNumber($v) . ' kg')->implode("\n");
 
+        // Format mitra detail
         $mitraList = collect($pengolahan['mitra'] ?? [])->map(function ($m) {
-            return "- {$m['nama']}: Pengadaan " . number_format($m['pengadaan'], 0, ',', '.') . " kg, Diolah " . number_format($m['pengolahan'], 0, ',', '.') . " kg, Sisa " . number_format($m['sisa'], 0, ',', '.') . " kg, Rasio {$m['rasio']}%";
+            return "- {$m['nama']}: Pengadaan " . $this->formatNumber($m['pengadaan']) . " kg, Diolah " . $this->formatNumber($m['pengolahan']) . " kg, Sisa " . $this->formatNumber($m['sisa']) . " kg, Rasio {$m['rasio']}%";
         })->implode("\n");
 
+        // Build raw data summaries
+        $gkpRawSummary = $this->buildRawSummary($gkp['raw'] ?? [], 'GKP');
+        $jagungRawSummary = $this->buildRawSummary($jagung['raw'] ?? [], 'Jagung');
+        $berasRawSummary = $this->buildRawSummary($beras['raw'] ?? [], 'Beras PSO');
+
+        // PO Today
         $poToday = '';
         if ($gkp['raw'] ?? []) {
             $today = now()->format('d/m/Y');
             $todayPOs = collect($gkp['raw'])->filter(fn($r) => ($r['tanggal_po'] ?? '') === $today);
             if ($todayPOs->isNotEmpty()) {
                 $poToday = "\n\nPO HARI INI (" . $todayPOs->count() . " PO):\n";
-                $poToday .= $todayPOs->map(fn($r) => "- {$r['nama_pemasok']} ({$r['wilayah']}): " . number_format($r['qty'] ?? 0, 0, ',', '.') . " kg, Status: " . (($r['no_in'] ?? '') ? 'Selesai' : 'Belum Input'))->implode("\n");
+                $poToday .= $todayPOs->map(fn($r) => "- {$r['nama_pemasok']} ({$r['wilayah']}): " . $this->formatNumber($r['qty'] ?? 0) . " kg, No IN: " . (($r['no_in'] ?? '') ? 'Ada' : 'Belum'))->implode("\n");
             }
         }
 
@@ -62,13 +76,22 @@ class ChatController extends Controller
         return <<<PROMPT
 Kamu adalah asisten data untuk Dashboard Monitoring Bulog Kancab Ciamis 2026.
 Tugasmu menjawab pertanyaan tentang data pengadaan komoditas (GKP, Jagung, Beras PSO) dan pengolahan.
-Jawab dalam Bahasa Indonesia. Gunakan format angka dengan pemisah ribuan (titik).
-Jika ditanya hal di luar data dashboard, katakan bahwa kamu hanya bisa menjawab tentang data dashboard.
 
-=== DATA GKP ===
-Total: {$gkp['total']} kg
-Target: 74.692.000 kg
-Persentase target: {$pctTarget}%
+ATURAN JAWABAN:
+- Jawab SINGKAT dan TO THE POINT (maksimal 3-4 kalimat untuk pertanyaan sederhana)
+- Gunakan format angka dengan pemisah ribuan (titik)
+- Selalu sebutkan sumber data: "Berdasarkan data dashboard..." atau "Dari spreadsheet..."
+- Jika ditanya detail, berikan data dalam format list singkat
+- Jika tidak tahu pasti, katakan "Data tidak tersedia di dashboard"
+- Gunakan Bahasa Indonesia yang natural
+
+=== INFO DASHBOARD ===
+Data diperbarui: {$fetchedAt}
+Sumber: Google Spreadsheet Bulog Kancab Ciamis 2026
+
+=== DATA GKP (Gabah Kering Panen) ===
+Total: {$this->formatNumber($gkp['total'])} kg
+Target: 74.692.000 kg (Capai: {$pctTarget}%)
 
 Per Bulan:
 {$format($gkp['by_month'] ?? [])}
@@ -76,11 +99,13 @@ Per Bulan:
 Per Wilayah:
 {$format($gkp['by_wilayah'] ?? [])}
 
-Top Mitra:
+Top Mitra ({$this->formatNumber(count($gkp['by_pemasok'] ?? []))} mitra):
 {$format($gkp['by_pemasok'] ?? [])}
 
+{$gkpRawSummary}
+
 === DATA JAGUNG ===
-Total: {$jagung['total']} kg
+Total: {$this->formatNumber($jagung['total'])} kg
 
 Per Bulan:
 {$format($jagung['by_month'] ?? [])}
@@ -88,8 +113,10 @@ Per Bulan:
 Per Wilayah:
 {$format($jagung['by_wilayah'] ?? [])}
 
+{$jagungRawSummary}
+
 === DATA BERAS PSO ===
-Total: {$beras['total']} kg
+Total: {$this->formatNumber($beras['total'])} kg
 
 Per Bulan:
 {$format($beras['by_month'] ?? [])}
@@ -97,17 +124,64 @@ Per Bulan:
 Per Gudang:
 {$format($beras['by_wilayah'] ?? [])}
 
-=== DATA PENGOLAHAN ===
-Total Pengadaan: {$pengolahan['total_pengadaan']} kg
-Total Diolah: {$pengolahan['total_olah']} kg
-Total Sisa: {$pengolahan['total_sisa']} kg
-Rasio Pengolahan: {$pengolahan['rasio']}%
-Rata-rata Rendeman: {$pengolahan['avg_rendeman']}%
+{$berasRawSummary}
 
-Detail per Mitra:
+=== DATA PENGOLAHAN ===
+Total Pengadaan: {$this->formatNumber($pengolahan['total_pengadaan'])} kg
+Total Diolah: {$this->formatNumber($pengolahan['total_olah'])} kg
+Total Sisa: {$this->formatNumber($pengolahan['total_sisa'])} kg
+Rasio: {$pengolahan['rasio']}%
+Rendeman: {$pengolahan['avg_rendeman']}%
+
+Detail Mitra:
 {$mitraList}
 {$poToday}
 PROMPT;
+    }
+
+    protected function buildRawSummary(array $raw, string $label): string
+    {
+        if (empty($raw)) {
+            return "Data mentah {$label}: Tidak tersedia";
+        }
+
+        $count = count($raw);
+        $totalQty = collect($raw)->sum('qty');
+        $uniqueWilayah = collect($raw)->pluck('wilayah')->unique()->filter()->count();
+        $uniquePemasok = collect($raw)->pluck('pemasok')->unique()->filter()->count();
+
+        // Get latest 5 POs
+        $latestPOs = collect($raw)->sortByDesc('tanggal_po')->take(5);
+        $latestList = $latestPOs->map(function ($r) {
+            return "- {$r['nomor_po']} ({$r['tanggal_po']}): {$r['nama_pemasok']} - " . $this->formatNumber($r['qty'] ?? 0) . " kg";
+        })->implode("\n");
+
+        // Get top 5 by qty
+        $topByQty = collect($raw)->sortByDesc('qty')->take(5);
+        $topList = $topByQty->map(function ($r) {
+            return "- {$r['nama_pemasok']} ({$r['wilayah']}): " . $this->formatNumber($r['qty'] ?? 0) . " kg";
+        })->implode("\n");
+
+        // Get POs without No IN
+        $withoutIN = collect($raw)->filter(fn($r) => empty($r['no_in']));
+        $withoutINCount = $withoutIN->count();
+        $withoutINTotal = $withoutIN->sum('qty');
+
+        return <<<RAW
+
+DATA MENTAH {$label}:
+- Total PO: {$count} transaksi
+- Total Kuantum: {$this->formatNumber($totalQty)} kg
+- Wilayah: {$uniqueWilayah} wilayah
+- Mitra: {$uniquePemasok} mitra
+- PO tanpa No IN: {$withoutINCount} ({$this->formatNumber($withoutINTotal)} kg)
+
+5 PO Terbaru:
+{$latestList}
+
+5 PO Terbesar:
+{$topList}
+RAW;
     }
 
     public function send(Request $request)
@@ -141,8 +215,8 @@ PROMPT;
                 ->post($this->apiBase . '/chat/completions', [
                     'model' => $this->model,
                     'messages' => $messages,
-                    'temperature' => 0.7,
-                    'max_tokens' => 1024,
+                    'temperature' => config('ai.temperature', 0.7),
+                    'max_tokens' => config('ai.max_tokens', 1024),
                 ]);
 
             if ($response->failed()) {
