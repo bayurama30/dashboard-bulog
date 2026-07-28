@@ -40,6 +40,15 @@
       </div>
     </div>
   </div>
+  <div class="chart-card full" style="margin-bottom:20px">
+    <h3>PO Hari Ini (<span id="gkp-po-count">0</span> PO · <span id="gkp-po-total">0</span> kg)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>No</th><th>Nama Mitra</th><th>Wilayah</th><th>Kuantum (kg)</th></tr></thead>
+        <tbody id="gkp-po-tbody"></tbody>
+      </table>
+    </div>
+  </div>
   <div class="chart-grid">
     <div class="chart-card"><h3>Tren Kuantum per Bulan</h3><div class="chart-wrap"><canvas id="gkp-monthly"></canvas></div></div>
     <div class="chart-card"><h3>Distribusi per Wilayah</h3><div class="chart-wrap"><canvas id="gkp-wilayah"></canvas></div></div>
@@ -481,10 +490,44 @@
       });
     }catch(e){console.warn('gkp-gauge error:',e);}
   }
+  function parseTanggal(s){
+    if(!s)return null;
+    var parts=s.split('/');
+    if(parts.length!==3)return null;
+    return new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
+  }
+  function isSameDay(d1,d2){
+    return d1.getFullYear()===d2.getFullYear()&&d1.getMonth()===d2.getMonth()&&d1.getDate()===d2.getDate();
+  }
+  function populatePoHariIni(){
+    var raw=d.gkp.raw||[];
+    var today=new Date();
+    var poToday=raw.filter(function(r){
+      var dt=parseTanggal(r.tanggal_po);
+      return dt&&isSameDay(dt,today);
+    });
+    var tbody=document.getElementById('gkp-po-tbody');
+    tbody.innerHTML='';
+    var totalQty=0;
+    poToday.forEach(function(r,i){
+      totalQty+=r.qty||0;
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td>'+(i+1)+'</td><td>'+r.nama_pemasok+'</td><td>'+r.wilayah+'</td><td>'+fmtNum(r.qty||0)+'</td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('gkp-po-count').textContent=poToday.length;
+    document.getElementById('gkp-po-total').textContent=fmtNum(Math.round(totalQty));
+    if(poToday.length===0){
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td colspan="4" style="text-align:center;color:var(--sub);padding:20px">Tidak ada PO hari ini</td>';
+      tbody.appendChild(tr);
+    }
+  }
   function drawAll(){
     var gkpFullNames=Object.keys(d.gkp.by_pemasok);
     var gkpMonthData=MONTHS.map(function(m){return d.gkp.by_month[m]||0});
     drawGkpGauge(d.gkp.total);
+    populatePoHariIni();
     chartOrError('gkp-monthly', function(c){return new Chart(c, {type:'bar',data:{labels:MONTHS_SHORT,datasets:[{label:'Kuantum (kg)',data:gkpMonthData,backgroundColor:'#6366f1',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,onClick:makeMonthlyClickHandler(MONTHS,'gkp-filter-bulan','gkp',gkpMonthData),plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
     var gkpWL=Object.keys(d.gkp.by_wilayah);
     chartOrError('gkp-wilayah', function(c){return new Chart(c, {type:'doughnut',data:{labels:gkpWL,datasets:[{data:Object.values(d.gkp.by_wilayah),backgroundColor:COLORS}]},options:{responsive:true,maintainAspectRatio:false,onClick:makeDoughnutClickHandler(gkpWL,'gkp-filter-wilayah','gkp'),plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}})});
