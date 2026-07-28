@@ -41,8 +41,8 @@
       <div class="chart-card" style="padding:12px;flex:1;overflow:auto">
         <h3 style="font-size:.85em;margin-bottom:8px">PO Hari Ini (<span id="gkp-po-count">0</span> · <span id="gkp-po-total">0</span> kg)</h3>
         <div class="table-wrap" style="max-height:140px;overflow-y:auto">
-          <table style="font-size:.8em">
-            <thead><tr><th style="padding:6px 8px">No</th><th style="padding:6px 8px">Mitra</th><th style="padding:6px 8px">Wilayah</th><th style="padding:6px 8px">Qty (kg)</th></tr></thead>
+            <table style="font-size:.8em">
+            <thead><tr><th style="padding:6px 8px">No</th><th style="padding:6px 8px">Mitra</th><th style="padding:6px 8px">Wilayah</th><th style="padding:6px 8px">Qty (kg)</th><th style="padding:6px 8px">Status</th></tr></thead>
             <tbody id="gkp-po-tbody"></tbody>
           </table>
         </div>
@@ -511,15 +511,18 @@
     var totalQty=0;
     poToday.forEach(function(r,i){
       totalQty+=r.qty||0;
+      var hasIN=r.no_in&&r.no_in.trim()!=='';
+      var status=hasIN?'Selesai':'Belum Input';
+      var statusColor=hasIN?'var(--green)':'var(--red)';
       var tr=document.createElement('tr');
-      tr.innerHTML='<td>'+(i+1)+'</td><td>'+r.nama_pemasok+'</td><td>'+r.wilayah+'</td><td>'+fmtNum(r.qty||0)+'</td>';
+      tr.innerHTML='<td style="padding:4px 8px">'+(i+1)+'</td><td style="padding:4px 8px">'+r.nama_pemasok+'</td><td style="padding:4px 8px">'+r.wilayah+'</td><td style="padding:4px 8px">'+fmtNum(r.qty||0)+'</td><td style="padding:4px 8px;color:'+statusColor+';font-weight:600">'+status+'</td>';
       tbody.appendChild(tr);
     });
     document.getElementById('gkp-po-count').textContent=poToday.length;
     document.getElementById('gkp-po-total').textContent=fmtNum(Math.round(totalQty));
     if(poToday.length===0){
       var tr=document.createElement('tr');
-      tr.innerHTML='<td colspan="4" style="text-align:center;color:var(--sub);padding:20px">Tidak ada PO hari ini</td>';
+      tr.innerHTML='<td colspan="5" style="text-align:center;color:var(--sub);padding:12px">Tidak ada PO hari ini</td>';
       tbody.appendChild(tr);
     }
   }
