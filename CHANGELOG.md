@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **AI Chat Assistant** — floating button chat di kanan bawah untuk bertanya tentang data dashboard. Menggunakan opencode zen API (deepseek-v4-flash-free). Fitur: markdown rendering, conversation history, dark/light theme, mobile responsive. AI dapat mengakses data mentah (raw), statistik detail, dan referensi spreadsheet.
+- **AI Chat Assistant** — floating button chat di kanan bawah untuk bertanya tentang data dashboard. Menggunakan opencode zen API (deepseek-v4-flash-free). Fitur: markdown rendering, conversation history, dark/light theme, mobile responsive. AI dapat mengakses semua data spreadsheet termasuk data mentah, statistik per tanggal/bulan/wilayah/mitra, dan referensi spreadsheet.
 - **PO Hari Ini** — tabel di tab GKP menampilkan daftar PO yang tanggal PO-nya sama dengan hari ini (berdasarkan waktu refresh data), di-grouping per mitra dengan total kuantum, wilayah, dan status Input Gudang Virtual (Selesai/Belum Input berdasarkan kolom No IN).
 - **GKP Target Gauge Chart** — gauge chart di tab GKP menampilkan progress target pengadaan (74,692,000 kg) dengan color coding: hijau (100%+), ungu (75-99%), kuning (50-74%), merah (<50%).
 - **GKP Target & Total Scorecards** — scorecard di samping gauge chart menampilkan target (74,692,000 kg) dan total pengadaan real-time.
@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`composer.json`** — typo `laravel/pao` → `laravel/pail`.
 
 ### Fixed
+- **PO Hari Ini date format** — format tanggal disesuaikan dengan data (`j/n/Y` tanpa leading zero) agar PO Hari Ini terdeteksi dengan benar.
 - **AI Chat API configuration** — URL base API diperbaiki (dari `/zen/go/v1` ke `/zen/v1`), model diganti ke `deepseek-v4-flash-free`, dan API key ditambahkan default value.
 - **Syntax error ChatController** — string concatenation di dalam heredoc dipindahkan ke variabel terpisah.
 - **Warna persentase gauge chart** — angka persentase di GKP gauge chart sekarang mengikuti warna gauge (hijau/ungu/kuning/merah).
