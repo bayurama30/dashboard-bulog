@@ -183,37 +183,21 @@
   function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 
   // --- Expose to global for inline onchange handlers ---
-  // Click-to-filter: bar chart → set search/pemasok filter
-  function attachChartClick(cid,fullNames,searchId,tab){
-    var cv=document.getElementById(cid);
-    cv.onclick=function(evt){
-      var ch=charts[cid];
-      if(!ch)return;
-      var els=ch.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
-      if(els.length>0){
-        var idx=els[0].index;
-        var fn=fullNames[idx];
-        if(fn){
-          if(searchId)document.getElementById(searchId).value=fn;
-          applyFilters(tab);
-        }
+  // Click-to-filter helper: bar chart → set search/pemasok filter
+  function makeBarClickHandler(fullNames,searchId,tab){
+    return function(evt,elements){
+      if(elements.length>0){
+        var fn=fullNames[elements[0].index];
+        if(fn){if(searchId)document.getElementById(searchId).value=fn;applyFilters(tab);}
       }
     };
   }
-  // Click-to-filter: doughnut chart → set wilayah/gudang dropdown
-  function attachDoughnutClick(cid,filterId,tab,fullLabels){
-    var cv=document.getElementById(cid);
-    cv.onclick=function(evt){
-      var ch=charts[cid];
-      if(!ch)return;
-      var els=ch.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
-      if(els.length>0){
-        var idx=els[0].index;
-        var label=fullLabels[idx];
-        if(label){
-          var sel=document.getElementById(filterId);
-          if(sel){sel.value=label;applyFilters(tab);}
-        }
+  // Click-to-filter helper: doughnut chart → set wilayah/gudang dropdown
+  function makeDoughnutClickHandler(fullLabels,filterId,tab){
+    return function(evt,elements){
+      if(elements.length>0){
+        var label=fullLabels[elements[0].index];
+        if(label){var sel=document.getElementById(filterId);if(sel){sel.value=label;applyFilters(tab);}}
       }
     };
   }
@@ -257,9 +241,8 @@
           type:'bar',data:{labels:labels,datasets:[
             {label:'Pengadaan',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},
             {label:'Diolah',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}
-          ]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}
-        });
-        attachChartClick('olah-mitra',olahFullNames,'olah-search','pengolahan');
+          ]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',onClick:makeBarClickHandler(olahFullNames,'olah-search','pengolahan'),plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}
+        );
       }catch(e){console.warn('olah-mitra error:',e);}
       destroyChart('olah-gauge');
       try{
@@ -275,17 +258,15 @@
           type:'bar',data:{labels:labels,datasets:[
             {label:'Pengadaan GKP',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},
             {label:'Pemasukan Fisik',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}
-          ]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}
-        });
-        attachChartClick('olah-fisik',olahFullNames,'olah-search','pengolahan');
+          ]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',onClick:makeBarClickHandler(olahFullNames,'olah-search','pengolahan'),plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}
+        );
       }catch(e){console.warn('olah-fisik error:',e);}
       destroyChart('olah-rendeman');
       try{
         charts['olah-rendeman']=new Chart(document.getElementById('olah-rendeman'),{
           type:'bar',data:{labels:labels,datasets:[{label:'Rasio (%)',data:top10.map(function(m){return m.rasio}),backgroundColor:top10.map(function(m){return m.rasio>40?'#22c55e':m.rasio>20?'#eab308':'#ef4444'}),borderRadius:4}]},
-          options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%'}}}}}
-        });
-        attachChartClick('olah-rendeman',olahFullNames,'olah-search','pengolahan');
+          options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',onClick:makeBarClickHandler(olahFullNames,'olah-search','pengolahan'),plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%'}}}}}
+        );
       }catch(e){console.warn('olah-rendeman error:',e);}
       return;
     }
@@ -316,18 +297,16 @@
       const wl=Object.keys(byWilayah);if(wl.length){
         charts['gkp-wilayah']=new Chart(document.getElementById('gkp-wilayah'),{
           type:'doughnut',data:{labels:wl,datasets:[{data:Object.values(byWilayah),backgroundColor:COLORS,borderWidth:0}]},
-          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}
+          options:{responsive:true,maintainAspectRatio:false,onClick:makeDoughnutClickHandler(wl,'gkp-filter-wilayah','gkp'),plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}
         });
       }
-      attachDoughnutClick('gkp-wilayah','gkp-filter-wilayah','gkp',wl);
       destroyChart('gkp-mitra');
       const mitra=Object.entries(byPemasok).slice(0,15);if(mitra.length){
         charts['gkp-mitra']=new Chart(document.getElementById('gkp-mitra'),{
           type:'bar',data:{labels:mitra.map(function(a){return shortName(a[0])}),datasets:[{label:'Kuantum (kg)',data:mitra.map(function(a){return a[1]}),backgroundColor:COLORS,borderRadius:4}]},
-          options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtKg(v)}}}}
-        });
+          options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,onClick:makeBarClickHandler(mitra.map(a=>a[0]),'gkp-filter-pemasok','gkp'),plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtKg(v)}}}}
+        );
       }
-      attachChartClick('gkp-mitra',mitra.map(a=>a[0]),'gkp-filter-pemasok','gkp');
     }else if(tab==='jagung'){
       document.getElementById('jagung-total').textContent=fmtNum(total);
       const tw=Object.entries(byWilayah)[0];
@@ -345,10 +324,9 @@
       const wl=Object.keys(byWilayah);if(wl.length){
         charts['jagung-wilayah']=new Chart(document.getElementById('jagung-wilayah'),{
           type:'doughnut',data:{labels:wl,datasets:[{data:Object.values(byWilayah),backgroundColor:['#f97316','#fb923c','#fdba74','#fed7aa','#ffedd5','#fff7ed'],borderWidth:0}]},
-          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}
+          options:{responsive:true,maintainAspectRatio:false,onClick:makeDoughnutClickHandler(wl,'jagung-filter-wilayah','jagung'),plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}
         });
       }
-      attachDoughnutClick('jagung-wilayah','jagung-filter-wilayah','jagung',wl);
     }else if(tab==='beras'){
       document.getElementById('beras-total').textContent=fmtNum(total);
       const tw=Object.entries(byWilayah)[0];
@@ -363,10 +341,9 @@
       const wl=Object.keys(byWilayah);if(wl.length){
         charts['beras-wilayah']=new Chart(document.getElementById('beras-wilayah'),{
           type:'doughnut',data:{labels:wl.map(w=>shortName(w)),datasets:[{data:Object.values(byWilayah),backgroundColor:['#3b82f6','#60a5fa','#93c5fd','#bfdbfe'],borderWidth:0}]},
-          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}
+          options:{responsive:true,maintainAspectRatio:false,onClick:makeDoughnutClickHandler(wl,'beras-filter-gudang','beras'),plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}
         });
       }
-      attachDoughnutClick('beras-wilayah','beras-filter-gudang','beras',wl);
     }
   };
 

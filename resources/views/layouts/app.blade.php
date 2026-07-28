@@ -37,7 +37,7 @@
     .chart-card h3{font-size:1em;margin-bottom:16px;color:var(--sub)}
     .chart-wrap{position:relative;width:100%;height:350px}
     .chart-wrap.short{height:300px}
-    canvas{width:100%!important;height:100%!important}
+    canvas{width:100%!important;height:100%!important;cursor:pointer}
     .table-wrap{overflow-x:auto}
     table{width:100%;border-collapse:collapse;font-size:.9em}
     th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
