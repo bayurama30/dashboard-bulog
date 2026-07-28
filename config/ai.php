@@ -4,7 +4,7 @@ return [
 
     'api_key' => env('OPENROUTER_API_KEY'),
 
-    'api_url' => env('OPENROUTER_API_URL', 'https://opencode.ai/zen/v1/chat/completions'),
+    'api_url' => env('OPENROUTER_API_URL', 'https://opencode.ai/zen/v1'),
 
     'model' => env('OPENROUTER_MODEL', 'deepseek-v4-flash-free'),
 
