@@ -78,6 +78,7 @@ ATURAN:
 - Format angka: titik sebagai pemisah ribuan (contoh: 1.234.567)
 - Selalu sebut "Berdasarkan data dashboard..." atau "Dari spreadsheet..."
 - Untuk data spesifik (PO tertentu, mitra tertentu), cari di data mentah yang diberikan
+- Untuk pertanyaan PO per tanggal: cek bagian "PER TANGGAL LENGKAP" di setiap komoditas
 - Jika data tidak ditemukan, katakan "Data tidak ditemukan di spreadsheet"
 - Gunakan Bahasa Indonesia
 
@@ -118,6 +119,12 @@ PROMPT;
             return "{$p}: " . $rows->count() . " PO, " . $this->formatNumber($rows->sum('qty')) . " kg";
         })->implode("\n");
 
+        // By date detail - ALL dates with PO count and qty
+        $byDate = collect($raw)->groupBy('tanggal_po')->sortKeys()->map(function ($rows, $date) {
+            $mitra = $rows->pluck('nama_pemasok')->unique()->implode(', ');
+            return "- {$date}: " . $rows->count() . " PO, " . $this->formatNumber($rows->sum('qty')) . " kg ({$mitra})";
+        })->implode("\n");
+
         // Recent 50 POs in compact format
         $recentPOs = collect($raw)->sortByDesc('tanggal_po')->take(50)->map(function ($r) {
             return "{$r['tanggal_po']}|{$r['nama_pemasok']}|{$r['wilayah']}|" . $this->formatNumber($r['qty'] ?? 0) . "|" . (($r['no_in'] ?? '') ? 'IN' : '-') . "|{$r['nomor_po']}";
@@ -152,6 +159,9 @@ Mitra ({$pemasok->count()}): {$pemasokList}
 
 PER BULAN:
 {$byMonth}
+
+PER TANGGAL LENGKAP (untuk cek PO per tanggal):
+{$byDate}
 
 PER WILAYAH:
 {$byWilayah}
