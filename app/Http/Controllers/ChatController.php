@@ -60,14 +60,25 @@ class ChatController extends Controller
         $jagungRawSummary = $this->buildRawSummary($jagung['raw'] ?? [], 'Jagung');
         $berasRawSummary = $this->buildRawSummary($beras['raw'] ?? [], 'Beras PSO');
 
-        // PO Today
-        $poToday = '';
-        if ($gkp['raw'] ?? []) {
-            $today = now()->format('d/m/Y');
-            $todayPOs = collect($gkp['raw'])->filter(fn($r) => ($r['tanggal_po'] ?? '') === $today);
-            if ($todayPOs->isNotEmpty()) {
-                $poToday = "\n\nPO HARI INI (" . $todayPOs->count() . " PO):\n";
-                $poToday .= $todayPOs->map(fn($r) => "- {$r['nama_pemasok']} ({$r['wilayah']}): " . $this->formatNumber($r['qty'] ?? 0) . " kg, No IN: " . (($r['no_in'] ?? '') ? 'Ada' : 'Belum'))->implode("\n");
+        // PO Today - always include, even if empty
+        $today = now()->format('j/n/Y'); // Format tanpa leading zero sesuai data
+        $todayDate = now()->format('d F Y');
+        $todayPOs = collect($gkp['raw'] ?? [])->filter(fn($r) => ($r['tanggal_po'] ?? '') === $today);
+        $poToday = "\n\n=== PO HARI INI ({$todayDate}) ===\n";
+        if ($todayPOs->isNotEmpty()) {
+            $poToday .= "Jumlah: " . $todayPOs->count() . " PO\n";
+            $poToday .= "Total: " . $this->formatNumber($todayPOs->sum('qty')) . " kg\n";
+            $poToday .= $todayPOs->map(function ($r) {
+                return "- {$r['nama_pemasok']} ({$r['wilayah']}): " . $this->formatNumber($r['qty'] ?? 0) . " kg | No IN: " . (($r['no_in'] ?? '') ? 'Ada' : 'Belum Input') . " | PO: {$r['nomor_po']}";
+            })->implode("\n");
+        } else {
+            $poToday .= "Tidak ada PO dengan tanggal {$today}.\n";
+            $poToday .= "Catatan: PO Hari Ini di dashboard menampilkan PO berdasarkan tanggal PO yang cocok dengan hari ini. ";
+            $poToday .= "Jika tidak ada, berarti belum ada PO baru hari ini atau data belum diperbarui.\n";
+            // Show latest available date
+            $latestDate = collect($gkp['raw'] ?? [])->pluck('tanggal_po')->sort()->last();
+            if ($latestDate) {
+                $poToday .= "Tanggal PO terakhir yang tersedia: {$latestDate}";
             }
         }
 
@@ -84,6 +95,8 @@ ATURAN JAWABAN:
 - Jika ditanya detail, berikan data dalam format list singkat
 - Jika tidak tahu pasti, katakan "Data tidak tersedia di dashboard"
 - Gunakan Bahasa Indonesia yang natural
+- Untuk pertanyaan "PO Hari Ini": cek bagian "PO HARI INI" di system prompt. Jika "Tidak ada PO", jelaskan bahwa tidak ada PO hari ini dan sebutkan tanggal PO terakhir yang tersedia.
+- Selalu refer ke data dashboard dan spreadsheet sebagai sumber informasi
 
 === INFO DASHBOARD ===
 Data diperbarui: {$fetchedAt}
@@ -147,40 +160,41 @@ PROMPT;
 
         $count = count($raw);
         $totalQty = collect($raw)->sum('qty');
-        $uniqueWilayah = collect($raw)->pluck('wilayah')->unique()->filter()->count();
-        $uniquePemasok = collect($raw)->pluck('pemasok')->unique()->filter()->count();
+        $uniqueWilayah = collect($raw)->pluck('wilayah')->unique()->filter()->values();
+        $uniquePemasok = collect($raw)->pluck('pemasok')->unique()->filter()->values();
 
-        // Get latest 5 POs
-        $latestPOs = collect($raw)->sortByDesc('tanggal_po')->take(5);
-        $latestList = $latestPOs->map(function ($r) {
-            return "- {$r['nomor_po']} ({$r['tanggal_po']}): {$r['nama_pemasok']} - " . $this->formatNumber($r['qty'] ?? 0) . " kg";
+        // Group by date
+        $byDate = collect($raw)->groupBy('tanggal_po')->sortKeys()->map(function ($rows, $date) {
+            $total = $rows->sum('qty');
+            return "- {$date}: " . $rows->count() . " PO, " . $this->formatNumber($total) . " kg";
         })->implode("\n");
 
-        // Get top 5 by qty
-        $topByQty = collect($raw)->sortByDesc('qty')->take(5);
-        $topList = $topByQty->map(function ($r) {
-            return "- {$r['nama_pemasok']} ({$r['wilayah']}): " . $this->formatNumber($r['qty'] ?? 0) . " kg";
+        // Get all POs with full detail (limit to 30 to save tokens)
+        $allPOs = collect($raw)->sortByDesc('tanggal_po')->take(30);
+        $allPOList = $allPOs->map(function ($r) {
+            return "- [{$r['tanggal_po']}] {$r['nama_pemasok']} ({$r['wilayah']}): " . $this->formatNumber($r['qty'] ?? 0) . " kg | No IN: " . (($r['no_in'] ?? '') ? 'Ada' : 'Kosong') . " | PO: {$r['nomor_po']}";
         })->implode("\n");
 
-        // Get POs without No IN
+        // Get POs without No IN (need input)
         $withoutIN = collect($raw)->filter(fn($r) => empty($r['no_in']));
-        $withoutINCount = $withoutIN->count();
-        $withoutINTotal = $withoutIN->sum('qty');
+        $withoutINList = $withoutIN->take(15)->map(function ($r) {
+            return "- [{$r['tanggal_po']}] {$r['nama_pemasok']} ({$r['wilayah']}): " . $this->formatNumber($r['qty'] ?? 0) . " kg";
+        })->implode("\n");
 
         return <<<RAW
 
-DATA MENTAH {$label}:
-- Total PO: {$count} transaksi
-- Total Kuantum: {$this->formatNumber($totalQty)} kg
-- Wilayah: {$uniqueWilayah} wilayah
-- Mitra: {$uniquePemasok} mitra
-- PO tanpa No IN: {$withoutINCount} ({$this->formatNumber($withoutINTotal)} kg)
+DATA MENTAH {$label} ({$count} PO, {$this->formatNumber($totalQty)} kg):
+Wilayah: {$uniqueWilayah->implode(', ')}
+Mitra: {$uniquePemasok->implode(', ')}
 
-5 PO Terbaru:
-{$latestList}
+PO PER TANGGAL:
+{$byDate}
 
-5 PO Terbesar:
-{$topList}
+DAFTAR PO (30 terbaru):
+{$allPOList}
+
+PO BELUM INPUT No IN ({$withoutIN->count()} PO):
+{$withoutINList}
 RAW;
     }
 
