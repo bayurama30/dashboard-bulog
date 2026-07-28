@@ -114,6 +114,7 @@
       .theme-toggle .switch::after{width:17px;height:17px}
       .theme-toggle.light .switch::after{transform:translateX(19px)}
       .theme-toggle .icon{font-size:1em}
+      [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
     }
     @media(max-width:420px){
       .kpi-grid{grid-template-columns:1fr}

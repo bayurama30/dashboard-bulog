@@ -15,15 +15,26 @@
     <button class="btn-export" onclick="exportData('pdf','gkp')">📄 PDF</button>
   </div>
   <div class="kpi-grid">
-    <div class="kpi"><div class="label">Total Pengadaan GKP</div><div class="value" style="color:var(--accent)" id="gkp-total">{{ number_format($data['gkp']['total'], 0, ',', '.') }}</div><div class="sub">kg</div></div>
     <div class="kpi"><div class="label">Rata per Bulan</div><div class="value" style="color:var(--blue)" id="gkp-rata">{{ number_format(round($data['gkp']['total']/count($data['gkp']['by_month'])), 0, ',', '.') }}</div><div class="sub">kg</div></div>
     @php $topW = array_key_first($data['gkp']['by_wilayah']); @endphp
     <div class="kpi"><div class="label">Wilayah Terbesar</div><div class="value" style="color:var(--green)" id="gkp-top-wilayah-name">{{ $topW }}</div><div class="sub" id="gkp-top-wilayah-val">{{ number_format($data['gkp']['by_wilayah'][$topW], 0, ',', '.') }} kg</div></div>
     @php $topM = array_key_first($data['gkp']['by_pemasok']); $topMshort = implode(' ', array_slice(explode(' ', $topM), 0, 2)); @endphp
     <div class="kpi"><div class="label">Mitra Teratas</div><div class="value" style="color:var(--purple)" id="gkp-top-mitra-name">{{ $topMshort }}</div><div class="sub" id="gkp-top-mitra-val">{{ number_format($data['gkp']['by_pemasok'][$topM], 0, ',', '.') }} kg</div></div>
   </div>
-  <div class="chart-grid" style="margin-bottom:20px">
-    <div class="chart-card full"><h3>Progress Target Pengadaan (74,692,000 kg)</h3><div class="chart-wrap short"><canvas id="gkp-gauge"></canvas></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+    <div class="chart-card"><h3>Progress Target Pengadaan</h3><div class="chart-wrap short"><canvas id="gkp-gauge"></canvas></div></div>
+    <div style="display:flex;flex-direction:column;gap:16px;justify-content:center">
+      <div class="kpi" style="text-align:left;padding:24px">
+        <div class="label">Target Pengadaan GKP</div>
+        <div class="value" style="color:var(--yellow);font-size:2.2em">74,692,000</div>
+        <div class="sub">kg</div>
+      </div>
+      <div class="kpi" style="text-align:left;padding:24px">
+        <div class="label">Total Pengadaan GKP</div>
+        <div class="value" style="color:var(--accent);font-size:2.2em" id="gkp-total">{{ number_format($data['gkp']['total'], 0, ',', '.') }}</div>
+        <div class="sub">kg</div>
+      </div>
+    </div>
   </div>
   <div class="chart-grid">
     <div class="chart-card"><h3>Tren Kuantum per Bulan</h3><div class="chart-wrap"><canvas id="gkp-monthly"></canvas></div></div>

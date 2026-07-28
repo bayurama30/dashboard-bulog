@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **GKP Target Gauge Chart** — gauge chart di tab GKP menampilkan progress target pengadaan (74,692,000 kg) dengan color coding: hijau (100%+), ungu (75-99%), kuning (50-74%), merah (<50%).
+- **GKP Target & Total Scorecards** — scorecard di samping gauge chart menampilkan target (74,692,000 kg) dan total pengadaan real-time.
 - **Rendaman Tonak KPI card** di tab Pengolahan — menampilkan rata-rata rendaman tonak pengolahan (weighted average) per mitra.
 - **Sisa Beras KPI card** di tab Pengolahan — menampilkan total sisa belum pengolahan setara beras.
 - **Interactive chart click-to-filter** — klik pada elemen chart (bar/doughnut) otomatis memfilter data:
