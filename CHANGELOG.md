@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **PO Hari Ini** — tabel di tab GKP menampilkan daftar PO yang tanggal PO-nya sama dengan hari ini (berdasarkan waktu refresh data), menampilkan nama mitra, wilayah, dan kuantum.
+- **PO Hari Ini** — tabel di tab GKP menampilkan daftar PO yang tanggal PO-nya sama dengan hari ini (berdasarkan waktu refresh data), di-grouping per mitra dengan total kuantum, wilayah, dan status Input Gudang Virtual (Selesai/Belum Input berdasarkan kolom No IN).
 - **GKP Target Gauge Chart** — gauge chart di tab GKP menampilkan progress target pengadaan (74,692,000 kg) dengan color coding: hijau (100%+), ungu (75-99%), kuning (50-74%), merah (<50%).
 - **GKP Target & Total Scorecards** — scorecard di samping gauge chart menampilkan target (74,692,000 kg) dan total pengadaan real-time.
 - **Rendaman Tonak KPI card** di tab Pengolahan — menampilkan rata-rata rendaman tonak pengolahan (weighted average) per mitra.
