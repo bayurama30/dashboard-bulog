@@ -22,6 +22,9 @@
     @php $topM = array_key_first($data['gkp']['by_pemasok']); $topMshort = implode(' ', array_slice(explode(' ', $topM), 0, 2)); @endphp
     <div class="kpi"><div class="label">Mitra Teratas</div><div class="value" style="color:var(--purple)" id="gkp-top-mitra-name">{{ $topMshort }}</div><div class="sub" id="gkp-top-mitra-val">{{ number_format($data['gkp']['by_pemasok'][$topM], 0, ',', '.') }} kg</div></div>
   </div>
+  <div class="chart-grid" style="margin-bottom:20px">
+    <div class="chart-card full"><h3>Progress Target Pengadaan (74,692,000 kg)</h3><div class="chart-wrap short"><canvas id="gkp-gauge"></canvas></div></div>
+  </div>
   <div class="chart-grid">
     <div class="chart-card"><h3>Tren Kuantum per Bulan</h3><div class="chart-wrap"><canvas id="gkp-monthly"></canvas></div></div>
     <div class="chart-card"><h3>Distribusi per Wilayah</h3><div class="chart-wrap"><canvas id="gkp-wilayah"></canvas></div></div>
@@ -315,6 +318,7 @@
       const tmn=tm?shortName(tm[0]).split(' ').slice(0,2).join(' '):'-';
       document.getElementById('gkp-top-mitra-name').textContent=tmn;
       document.getElementById('gkp-top-mitra-val').textContent=tm?fmtNum(tm[1])+' kg':'-';
+      drawGkpGauge(total);
       destroyChart('gkp-monthly');
       var gkpMonthLabels=months.map(m=>MONTHS_SHORT[parseInt(m.substring(0,2))-1]||m);
       var gkpMonthValues=months.map(m=>byMonth[m]||0);
@@ -438,9 +442,34 @@
     }
   }
 
+  var GKP_TARGET=74692000;
+  function drawGkpGauge(total){
+    destroyChart('gkp-gauge');
+    var pct=Math.round(total/GKP_TARGET*1000)/10;
+    var remaining=Math.max(0,GKP_TARGET-total);
+    var color=pct>=100?'#22c55e':pct>=75?'#6366f1':pct>=50?'#eab308':'#ef4444';
+    try{
+      charts['gkp-gauge']=new Chart(document.getElementById('gkp-gauge'),{
+        type:'doughnut',
+        data:{labels:['Tercapai','Sisa'],datasets:[{data:[Math.min(pct,100),Math.max(0,100-pct)],backgroundColor:[color,'#2a2d3a'],borderWidth:0,circumference:180,rotation:270}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%'}}}}},
+        plugins:[{id:'gkpGaugeText',afterDraw:function(chart){
+          var ctx=chart.ctx,ca=chart.chartArea;
+          var x=(ca.left+ca.right)/2,y=(ca.top+ca.bottom)/2.6;
+          ctx.save();
+          ctx.font='bold 36px -apple-system,sans-serif';ctx.fillStyle='#e1e4ed';ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText(pct+'%',x,y-8);
+          ctx.font='13px -apple-system,sans-serif';ctx.fillStyle='#8b90a0';
+          ctx.fillText(fmtKg(total)+' / '+fmtKg(GKP_TARGET)+' kg',x,y+22);
+          ctx.restore();
+        }}]
+      });
+    }catch(e){console.warn('gkp-gauge error:',e);}
+  }
   function drawAll(){
     var gkpFullNames=Object.keys(d.gkp.by_pemasok);
     var gkpMonthData=MONTHS.map(function(m){return d.gkp.by_month[m]||0});
+    drawGkpGauge(d.gkp.total);
     chartOrError('gkp-monthly', function(c){return new Chart(c, {type:'bar',data:{labels:MONTHS_SHORT,datasets:[{label:'Kuantum (kg)',data:gkpMonthData,backgroundColor:'#6366f1',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,onClick:makeMonthlyClickHandler(MONTHS,'gkp-filter-bulan','gkp',gkpMonthData),plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
     var gkpWL=Object.keys(d.gkp.by_wilayah);
     chartOrError('gkp-wilayah', function(c){return new Chart(c, {type:'doughnut',data:{labels:gkpWL,datasets:[{data:Object.values(d.gkp.by_wilayah),backgroundColor:COLORS}]},options:{responsive:true,maintainAspectRatio:false,onClick:makeDoughnutClickHandler(gkpWL,'gkp-filter-wilayah','gkp'),plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}})});
