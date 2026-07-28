@@ -23,30 +23,30 @@
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
     <div class="chart-card"><h3>Progress Target Pengadaan</h3><div class="chart-wrap short"><canvas id="gkp-gauge"></canvas></div></div>
-    <div style="display:flex;flex-direction:column;gap:16px;justify-content:center">
-      <div class="kpi" style="text-align:center;padding:24px">
+    <div style="display:flex;flex-direction:column;gap:12px;justify-content:space-between">
+      <div class="kpi" style="text-align:center;padding:18px">
         <div class="label">Target Pengadaan GKP</div>
         <div style="display:flex;align-items:baseline;justify-content:center;gap:6px">
-          <div class="value" style="color:var(--yellow);font-size:2.2em">74,692,000</div>
-          <div style="font-size:1.1em;font-weight:600;color:var(--sub)">kg</div>
+          <div class="value" style="color:var(--yellow);font-size:2em">74,692,000</div>
+          <div style="font-size:1em;font-weight:600;color:var(--sub)">kg</div>
         </div>
       </div>
-      <div class="kpi" style="text-align:center;padding:24px">
+      <div class="kpi" style="text-align:center;padding:18px">
         <div class="label">Total Pengadaan GKP</div>
         <div style="display:flex;align-items:baseline;justify-content:center;gap:6px">
-          <div class="value" style="color:var(--accent);font-size:2.2em" id="gkp-total">{{ number_format($data['gkp']['total'], 0, ',', '.') }}</div>
-          <div style="font-size:1.1em;font-weight:600;color:var(--sub)">kg</div>
+          <div class="value" style="color:var(--accent);font-size:2em" id="gkp-total">{{ number_format($data['gkp']['total'], 0, ',', '.') }}</div>
+          <div style="font-size:1em;font-weight:600;color:var(--sub)">kg</div>
         </div>
       </div>
-    </div>
-  </div>
-  <div class="chart-card full" style="margin-bottom:20px">
-    <h3>PO Hari Ini (<span id="gkp-po-count">0</span> PO · <span id="gkp-po-total">0</span> kg)</h3>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>No</th><th>Nama Mitra</th><th>Wilayah</th><th>Kuantum (kg)</th></tr></thead>
-        <tbody id="gkp-po-tbody"></tbody>
-      </table>
+      <div class="chart-card" style="padding:12px;flex:1;overflow:auto">
+        <h3 style="font-size:.85em;margin-bottom:8px">PO Hari Ini (<span id="gkp-po-count">0</span> · <span id="gkp-po-total">0</span> kg)</h3>
+        <div class="table-wrap" style="max-height:140px;overflow-y:auto">
+          <table style="font-size:.8em">
+            <thead><tr><th style="padding:6px 8px">No</th><th style="padding:6px 8px">Mitra</th><th style="padding:6px 8px">Wilayah</th><th style="padding:6px 8px">Qty (kg)</th></tr></thead>
+            <tbody id="gkp-po-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
   <div class="chart-grid">
