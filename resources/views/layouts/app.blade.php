@@ -325,9 +325,9 @@
       document.getElementById('aiChatSend').disabled=true;
       showTyping();
       try{
-        var res=await fetch('/chat',{
+        var res=await fetch('/api/chat',{
           method:'POST',
-          headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'},
+          headers:{'Content-Type':'application/json','Accept':'application/json'},
           body:JSON.stringify({message:msg,history:aiChatHistory.slice(0,-1)})
         });
         var json=await res.json();
