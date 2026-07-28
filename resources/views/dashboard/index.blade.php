@@ -183,6 +183,40 @@
   function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 
   // --- Expose to global for inline onchange handlers ---
+  // Click-to-filter: bar chart → set search/pemasok filter
+  function attachChartClick(cid,fullNames,searchId,tab){
+    var cv=document.getElementById(cid);
+    cv.onclick=function(evt){
+      var ch=charts[cid];
+      if(!ch)return;
+      var els=ch.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
+      if(els.length>0){
+        var idx=els[0].index;
+        var fn=fullNames[idx];
+        if(fn){
+          if(searchId)document.getElementById(searchId).value=fn;
+          applyFilters(tab);
+        }
+      }
+    };
+  }
+  // Click-to-filter: doughnut chart → set wilayah/gudang dropdown
+  function attachDoughnutClick(cid,filterId,tab,fullLabels){
+    var cv=document.getElementById(cid);
+    cv.onclick=function(evt){
+      var ch=charts[cid];
+      if(!ch)return;
+      var els=ch.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
+      if(els.length>0){
+        var idx=els[0].index;
+        var label=fullLabels[idx];
+        if(label){
+          var sel=document.getElementById(filterId);
+          if(sel){sel.value=label;applyFilters(tab);}
+        }
+      }
+    };
+  }
   window.applyFilters = function(tab){
     if(tab==='pengolahan'){
       var q=document.getElementById('olah-search').value.toLowerCase();
@@ -216,6 +250,7 @@
       });
       var top10=filtered.slice(0,10);
       var labels=top10.map(function(m){return shortName(m.nama)});
+      var olahFullNames=top10.map(function(m){return m.nama});
       destroyChart('olah-mitra');
       try{
         charts['olah-mitra']=new Chart(document.getElementById('olah-mitra'),{
@@ -224,6 +259,7 @@
             {label:'Diolah',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}
           ]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}
         });
+        attachChartClick('olah-mitra',olahFullNames,'olah-search','pengolahan');
       }catch(e){console.warn('olah-mitra error:',e);}
       destroyChart('olah-gauge');
       try{
@@ -241,6 +277,7 @@
             {label:'Pemasukan Fisik',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}
           ]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}
         });
+        attachChartClick('olah-fisik',olahFullNames,'olah-search','pengolahan');
       }catch(e){console.warn('olah-fisik error:',e);}
       destroyChart('olah-rendeman');
       try{
@@ -248,6 +285,7 @@
           type:'bar',data:{labels:labels,datasets:[{label:'Rasio (%)',data:top10.map(function(m){return m.rasio}),backgroundColor:top10.map(function(m){return m.rasio>40?'#22c55e':m.rasio>20?'#eab308':'#ef4444'}),borderRadius:4}]},
           options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%'}}}}}
         });
+        attachChartClick('olah-rendeman',olahFullNames,'olah-search','pengolahan');
       }catch(e){console.warn('olah-rendeman error:',e);}
       return;
     }
@@ -281,6 +319,7 @@
           options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}
         });
       }
+      attachDoughnutClick('gkp-wilayah','gkp-filter-wilayah','gkp',wl);
       destroyChart('gkp-mitra');
       const mitra=Object.entries(byPemasok).slice(0,15);if(mitra.length){
         charts['gkp-mitra']=new Chart(document.getElementById('gkp-mitra'),{
@@ -288,6 +327,7 @@
           options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtKg(v)}}}}
         });
       }
+      attachChartClick('gkp-mitra',mitra.map(a=>a[0]),'gkp-filter-pemasok','gkp');
     }else if(tab==='jagung'){
       document.getElementById('jagung-total').textContent=fmtNum(total);
       const tw=Object.entries(byWilayah)[0];
@@ -308,6 +348,7 @@
           options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}
         });
       }
+      attachDoughnutClick('jagung-wilayah','jagung-filter-wilayah','jagung',wl);
     }else if(tab==='beras'){
       document.getElementById('beras-total').textContent=fmtNum(total);
       const tw=Object.entries(byWilayah)[0];
@@ -325,6 +366,7 @@
           options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}
         });
       }
+      attachDoughnutClick('beras-wilayah','beras-filter-gudang','beras',wl);
     }
   };
 

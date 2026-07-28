@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Rendaman Tonak KPI card** di tab Pengolahan — menampilkan rata-rata rendaman tonak pengolahan (weighted average) per mitra.
 - **Sisa Beras KPI card** di tab Pengolahan — menampilkan total sisa belum pengolahan setara beras.
+- **Interactive chart click-to-filter** — klik pada elemen chart (bar/doughnut) otomatis memfilter data:
+  - Tab Pengolahan: klik bar di `olah-mitra`, `olah-fisik`, `olah-rendeman` → filter pencarian mitra
+  - Tab GKP: klik segment `gkp-wilayah` → filter wilayah; klik bar `gkp-mitra` → filter pemasok
+  - Tab Jagung: klik segment `jagung-wilayah` → filter wilayah
+  - Tab Beras: klik segment `beras-wilayah` → filter gudang
 - **Rendeman numerik** ke data mitra di `FetchSheetsData.php` — memungkinkan perhitungan rata-rata tertimbang di JavaScript saat filter diterapkan.
 - **`avg_rendeman`** ke output data pengolahan di `FetchSheetsData.php`.
 - **`GOOGLE_SPREADSHEET_ID`** environment variable di `.env` dan `.env.example`.
