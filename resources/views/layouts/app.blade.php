@@ -37,7 +37,9 @@
     .chart-card h3{font-size:1em;margin-bottom:16px;color:var(--sub)}
     .chart-wrap{position:relative;width:100%;height:350px}
     .chart-wrap.short{height:300px}
-    canvas{width:100%!important;height:100%!important;cursor:pointer}
+    canvas{width:100%!important;height:100%!important;cursor:pointer;transition:opacity .2s}
+    canvas:active{opacity:.8}
+    .chart-card.clickable:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
     .table-wrap{overflow-x:auto}
     table{width:100%;border-collapse:collapse;font-size:.9em}
     th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
@@ -70,6 +72,7 @@
     .toast.success{background:#16a34a}
     .toast.error{background:#dc2626}
     .toast.warning{background:#d97706}
+    .toast.info{background:#3b82f6}
     .toast .toast-icon{font-size:1.2em}
     .toast .toast-close{margin-left:auto;cursor:pointer;opacity:.7;font-size:1.1em;background:none;border:none;color:#fff}
     .toast .toast-close:hover{opacity:1}
@@ -184,7 +187,7 @@
     }
     function showToast(type,title,msg){
       const container=document.getElementById('toastContainer');
-      const icons={success:'✅',error:'❌',warning:'⚠️'};
+      const icons={success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
       const toast=document.createElement('div');
       toast.className='toast '+type;
       toast.innerHTML='<span class="toast-icon">'+icons[type]+'</span><div><strong>'+title+'</strong><div style="font-size:.85em;opacity:.85">'+msg+'</div></div><button class="toast-close" onclick="this.parentElement.remove()">✕</button>';

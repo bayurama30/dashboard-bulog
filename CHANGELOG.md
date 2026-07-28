@@ -12,9 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sisa Beras KPI card** di tab Pengolahan — menampilkan total sisa belum pengolahan setara beras.
 - **Interactive chart click-to-filter** — klik pada elemen chart (bar/doughnut) otomatis memfilter data:
   - Tab Pengolahan: klik bar di `olah-mitra`, `olah-fisik`, `olah-rendeman` → filter pencarian mitra
-  - Tab GKP: klik segment `gkp-wilayah` → filter wilayah; klik bar `gkp-mitra` → filter pemasok
-  - Tab Jagung: klik segment `jagung-wilayah` → filter wilayah
-  - Tab Beras: klik segment `beras-wilayah` → filter gudang
+  - Tab GKP: klik segment `gkp-wilayah` → filter wilayah; klik bar `gkp-mitra` → filter pemasok; klik bar bulan → filter bulan
+  - Tab Jagung: klik segment `jagung-wilayah` → filter wilayah; klik bar bulan → filter bulan
+  - Tab Beras: klik segment `beras-wilayah` → filter gudang; klik bar bulan → filter bulan
+- **Toast notification** saat chart diklik — menampilkan info filter yang diterapkan (warna biru untuk info, hijau untuk sukses).
 - **Rendeman numerik** ke data mitra di `FetchSheetsData.php` — memungkinkan perhitungan rata-rata tertimbang di JavaScript saat filter diterapkan.
 - **`avg_rendeman`** ke output data pengolahan di `FetchSheetsData.php`.
 - **`GOOGLE_SPREADSHEET_ID`** environment variable di `.env` dan `.env.example`.
@@ -42,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`composer.json`** — typo `laravel/pao` → `laravel/pail`.
 
 ### Fixed
+- **Chart tidak muncul** — syntax error pada Chart constructor (kurung `}` hilang sebelum `)`) di 4 chart: `olah-mitra`, `olah-fisik`, `olah-rendeman`, `gkp-mitra`.
+- **Chart click handler tidak berfungsi di Chart.js v4** — diupdate signature onClick callback ke `(event, elements, chart)`.
+- **Monthly chart click filter** — klik bar bulan sekarang otomatis set dropdown bulan dan filter data (sebelumnya hanya toast).
+- **`showToast` type 'info' undefined** — ditambahkan icon `ℹ️` dan CSS `.toast.info` (warna biru).
 - **XSS vulnerability di `exportPdf()`** — `htmlspecialchars()` ditambahkan pada header, filter label, dan tab heading.
 - **XSS vulnerability di `exportData()` JavaScript** — fungsi `esc()` ditambahkan dan diterapkan pada semua nilai header/sel CSV, XLSX, PDF.
 - **`exportExcel()`** — diganti dari `header()` + `exit` ke `response()->streamDownload()`.

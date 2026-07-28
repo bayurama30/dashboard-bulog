@@ -185,19 +185,46 @@
   // --- Expose to global for inline onchange handlers ---
   // Click-to-filter helper: bar chart → set search/pemasok filter
   function makeBarClickHandler(fullNames,searchId,tab){
-    return function(evt,elements){
+    return function(evt,elements,chart){
       if(elements.length>0){
-        var fn=fullNames[elements[0].index];
-        if(fn){if(searchId)document.getElementById(searchId).value=fn;applyFilters(tab);}
+        var idx=elements[0].index;
+        var fn=fullNames[idx];
+        if(fn){
+          if(searchId)document.getElementById(searchId).value=fn;
+          applyFilters(tab);
+          showToast('success','Filter diterapkan','Menampilkan data untuk: '+fn);
+        }
       }
     };
   }
   // Click-to-filter helper: doughnut chart → set wilayah/gudang dropdown
   function makeDoughnutClickHandler(fullLabels,filterId,tab){
-    return function(evt,elements){
+    return function(evt,elements,chart){
       if(elements.length>0){
-        var label=fullLabels[elements[0].index];
-        if(label){var sel=document.getElementById(filterId);if(sel){sel.value=label;applyFilters(tab);}}
+        var idx=elements[0].index;
+        var label=fullLabels[idx];
+        if(label){
+          var sel=document.getElementById(filterId);
+          if(sel){sel.value=label;applyFilters(tab);
+            showToast('success','Filter diterapkan','Menampilkan data untuk: '+label);
+          }
+        }
+      }
+    };
+  }
+  // Click-to-filter helper: monthly bar chart → set bulan dropdown
+  function makeMonthlyClickHandler(monthNames,filterId,tab,monthValues){
+    return function(evt,elements,chart){
+      if(elements.length>0){
+        var idx=elements[0].index;
+        var bulan=monthNames[idx];
+        var val=monthValues?fmtKg(monthValues[idx]):'';
+        if(bulan){
+          var sel=document.getElementById(filterId);
+          if(sel){sel.value=bulan;applyFilters(tab);
+            showToast('info','Filter Bulan '+MONTHS_SHORT[idx],val?'Total: '+val+' kg':'');
+          }
+        }
       }
     };
   }
@@ -242,7 +269,7 @@
             {label:'Pengadaan',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},
             {label:'Diolah',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}
           ]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',onClick:makeBarClickHandler(olahFullNames,'olah-search','pengolahan'),plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}
-        );
+        });
       }catch(e){console.warn('olah-mitra error:',e);}
       destroyChart('olah-gauge');
       try{
@@ -259,14 +286,14 @@
             {label:'Pengadaan GKP',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},
             {label:'Pemasukan Fisik',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}
           ]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',onClick:makeBarClickHandler(olahFullNames,'olah-search','pengolahan'),plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}
-        );
+        });
       }catch(e){console.warn('olah-fisik error:',e);}
       destroyChart('olah-rendeman');
       try{
         charts['olah-rendeman']=new Chart(document.getElementById('olah-rendeman'),{
           type:'bar',data:{labels:labels,datasets:[{label:'Rasio (%)',data:top10.map(function(m){return m.rasio}),backgroundColor:top10.map(function(m){return m.rasio>40?'#22c55e':m.rasio>20?'#eab308':'#ef4444'}),borderRadius:4}]},
           options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',onClick:makeBarClickHandler(olahFullNames,'olah-search','pengolahan'),plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%'}}}}}
-        );
+        });
       }catch(e){console.warn('olah-rendeman error:',e);}
       return;
     }
@@ -289,9 +316,11 @@
       document.getElementById('gkp-top-mitra-name').textContent=tmn;
       document.getElementById('gkp-top-mitra-val').textContent=tm?fmtNum(tm[1])+' kg':'-';
       destroyChart('gkp-monthly');
+      var gkpMonthLabels=months.map(m=>MONTHS_SHORT[parseInt(m.substring(0,2))-1]||m);
+      var gkpMonthValues=months.map(m=>byMonth[m]||0);
       charts['gkp-monthly']=new Chart(document.getElementById('gkp-monthly'),{
-        type:'bar',data:{labels:months.map(m=>MONTHS_SHORT[parseInt(m.substring(0,2))-1]||m),datasets:[{label:'Kuantum (kg)',data:months.map(m=>byMonth[m]||0),backgroundColor:'#6366f1',borderRadius:6}]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtKg(v)}}}}
+        type:'bar',data:{labels:gkpMonthLabels,datasets:[{label:'Kuantum (kg)',data:gkpMonthValues,backgroundColor:'#6366f1',borderRadius:6}]},
+        options:{responsive:true,maintainAspectRatio:false,onClick:makeMonthlyClickHandler(months,'gkp-filter-bulan','gkp',gkpMonthValues),plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtKg(v)}}}}
       });
       destroyChart('gkp-wilayah');
       const wl=Object.keys(byWilayah);if(wl.length){
@@ -305,7 +334,7 @@
         charts['gkp-mitra']=new Chart(document.getElementById('gkp-mitra'),{
           type:'bar',data:{labels:mitra.map(function(a){return shortName(a[0])}),datasets:[{label:'Kuantum (kg)',data:mitra.map(function(a){return a[1]}),backgroundColor:COLORS,borderRadius:4}]},
           options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,onClick:makeBarClickHandler(mitra.map(a=>a[0]),'gkp-filter-pemasok','gkp'),plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtKg(v)}}}}
-        );
+        });
       }
     }else if(tab==='jagung'){
       document.getElementById('jagung-total').textContent=fmtNum(total);
@@ -316,9 +345,11 @@
       document.getElementById('jagung-bulan-puncak-name').textContent=bp||'-';
       document.getElementById('jagung-bulan-puncak-val').textContent=bp?fmtNum(byMonth[bp])+' kg':'-';
       destroyChart('jagung-monthly');
+      var jagungMonthLabels=months.map(m=>MONTHS_SHORT[parseInt(m.substring(0,2))-1]||m);
+      var jagungMonthValues=months.map(m=>byMonth[m]||0);
       charts['jagung-monthly']=new Chart(document.getElementById('jagung-monthly'),{
-        type:'bar',data:{labels:months.map(m=>MONTHS_SHORT[parseInt(m.substring(0,2))-1]||m),datasets:[{label:'Kuantum (kg)',data:months.map(m=>byMonth[m]||0),backgroundColor:'#f97316',borderRadius:6}]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtKg(v)}}}}
+        type:'bar',data:{labels:jagungMonthLabels,datasets:[{label:'Kuantum (kg)',data:jagungMonthValues,backgroundColor:'#f97316',borderRadius:6}]},
+        options:{responsive:true,maintainAspectRatio:false,onClick:makeMonthlyClickHandler(months,'jagung-filter-bulan','jagung',jagungMonthValues),plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtKg(v)}}}}
       });
       destroyChart('jagung-wilayah');
       const wl=Object.keys(byWilayah);if(wl.length){
@@ -333,9 +364,11 @@
       document.getElementById('beras-top-gudang-name').textContent=tw?shortName(tw[0]):'-';
       document.getElementById('beras-top-gudang-val').textContent=tw?fmtNum(tw[1])+' kg':'-';
       destroyChart('beras-monthly');
+      var berasMonthLabels=months.map(m=>MONTHS_SHORT[parseInt(m.substring(0,2))-1]||m);
+      var berasMonthValues=months.map(m=>byMonth[m]||0);
       charts['beras-monthly']=new Chart(document.getElementById('beras-monthly'),{
-        type:'bar',data:{labels:months.map(m=>MONTHS_SHORT[parseInt(m.substring(0,2))-1]||m),datasets:[{label:'Kuantum (kg)',data:months.map(m=>byMonth[m]||0),backgroundColor:'#3b82f6',borderRadius:6}]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtKg(v)}}}}
+        type:'bar',data:{labels:berasMonthLabels,datasets:[{label:'Kuantum (kg)',data:berasMonthValues,backgroundColor:'#3b82f6',borderRadius:6}]},
+        options:{responsive:true,maintainAspectRatio:false,onClick:makeMonthlyClickHandler(months,'beras-filter-bulan','beras',berasMonthValues),plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtKg(v)}}}}
       });
       destroyChart('beras-wilayah');
       const wl=Object.keys(byWilayah);if(wl.length){
@@ -406,21 +439,30 @@
   }
 
   function drawAll(){
-    chartOrError('gkp-monthly', function(c){return new Chart(c, {type:'bar',data:{labels:MONTHS_SHORT,datasets:[{label:'Kuantum (kg)',data:MONTHS.map(function(m){return d.gkp.by_month[m]||0}),backgroundColor:'#6366f1',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
-    chartOrError('gkp-wilayah', function(c){return new Chart(c, {type:'doughnut',data:{labels:Object.keys(d.gkp.by_wilayah),datasets:[{data:Object.values(d.gkp.by_wilayah),backgroundColor:COLORS}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}})});
-    chartOrError('gkp-mitra', function(c){return new Chart(c, {type:'bar',data:{labels:Object.keys(d.gkp.by_pemasok).map(function(n){return shortName(n)}),datasets:[{label:'Kuantum (kg)',data:Object.values(d.gkp.by_pemasok),backgroundColor:COLORS,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
+    var gkpFullNames=Object.keys(d.gkp.by_pemasok);
+    var gkpMonthData=MONTHS.map(function(m){return d.gkp.by_month[m]||0});
+    chartOrError('gkp-monthly', function(c){return new Chart(c, {type:'bar',data:{labels:MONTHS_SHORT,datasets:[{label:'Kuantum (kg)',data:gkpMonthData,backgroundColor:'#6366f1',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,onClick:makeMonthlyClickHandler(MONTHS,'gkp-filter-bulan','gkp',gkpMonthData),plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
+    var gkpWL=Object.keys(d.gkp.by_wilayah);
+    chartOrError('gkp-wilayah', function(c){return new Chart(c, {type:'doughnut',data:{labels:gkpWL,datasets:[{data:Object.values(d.gkp.by_wilayah),backgroundColor:COLORS}]},options:{responsive:true,maintainAspectRatio:false,onClick:makeDoughnutClickHandler(gkpWL,'gkp-filter-wilayah','gkp'),plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}})});
+    chartOrError('gkp-mitra', function(c){return new Chart(c, {type:'bar',data:{labels:gkpFullNames.map(function(n){return shortName(n)}),datasets:[{label:'Kuantum (kg)',data:Object.values(d.gkp.by_pemasok),backgroundColor:COLORS,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,onClick:makeBarClickHandler(gkpFullNames,'gkp-filter-pemasok','gkp'),plugins:{legend:{display:false}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
 
-    chartOrError('jagung-monthly', function(c){return new Chart(c, {type:'bar',data:{labels:MONTHS_SHORT,datasets:[{label:'Kuantum (kg)',data:MONTHS.map(function(m){return d.jagung.by_month[m]||0}),backgroundColor:'#f97316',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
-    chartOrError('jagung-wilayah', function(c){return new Chart(c, {type:'doughnut',data:{labels:Object.keys(d.jagung.by_wilayah),datasets:[{data:Object.values(d.jagung.by_wilayah),backgroundColor:['#f97316','#fb923c','#fdba74','#fed7aa','#ffedd5','#fff7ed']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}})});
+    var jagungWL=Object.keys(d.jagung.by_wilayah);
+    var jagungMonthData=MONTHS.map(function(m){return d.jagung.by_month[m]||0});
+    chartOrError('jagung-monthly', function(c){return new Chart(c, {type:'bar',data:{labels:MONTHS_SHORT,datasets:[{label:'Kuantum (kg)',data:jagungMonthData,backgroundColor:'#f97316',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,onClick:makeMonthlyClickHandler(MONTHS,'jagung-filter-bulan','jagung',jagungMonthData),plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
+    chartOrError('jagung-wilayah', function(c){return new Chart(c, {type:'doughnut',data:{labels:jagungWL,datasets:[{data:Object.values(d.jagung.by_wilayah),backgroundColor:['#f97316','#fb923c','#fdba74','#fed7aa','#ffedd5','#fff7ed']}]},options:{responsive:true,maintainAspectRatio:false,onClick:makeDoughnutClickHandler(jagungWL,'jagung-filter-wilayah','jagung'),plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}})});
 
-    chartOrError('beras-monthly', function(c){return new Chart(c, {type:'bar',data:{labels:MONTHS_SHORT.slice(0,3),datasets:[{label:'Kuantum (kg)',data:MONTHS.slice(0,3).map(function(m){return d.beras_pso.by_month[m]||0}),backgroundColor:'#3b82f6',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
-    chartOrError('beras-wilayah', function(c){return new Chart(c, {type:'doughnut',data:{labels:Object.keys(d.beras_pso.by_wilayah).map(function(w){return shortName(w)}),datasets:[{data:Object.values(d.beras_pso.by_wilayah),backgroundColor:['#3b82f6','#60a5fa','#93c5fd','#bfdbfe'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}})});
+    var berasWL=Object.keys(d.beras_pso.by_wilayah).map(function(w){return shortName(w)});
+    var berasFullWL=Object.keys(d.beras_pso.by_wilayah);
+    var berasMonthData=MONTHS.slice(0,3).map(function(m){return d.beras_pso.by_month[m]||0});
+    chartOrError('beras-monthly', function(c){return new Chart(c, {type:'bar',data:{labels:MONTHS_SHORT.slice(0,3),datasets:[{label:'Kuantum (kg)',data:berasMonthData,backgroundColor:'#3b82f6',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,onClick:makeMonthlyClickHandler(MONTHS.slice(0,3),'beras-filter-bulan','beras',berasMonthData),plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
+    chartOrError('beras-wilayah', function(c){return new Chart(c, {type:'doughnut',data:{labels:berasWL,datasets:[{data:Object.values(d.beras_pso.by_wilayah),backgroundColor:['#3b82f6','#60a5fa','#93c5fd','#bfdbfe'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,onClick:makeDoughnutClickHandler(berasFullWL,'beras-filter-gudang','beras'),plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12}}}}})});
 
     var top10 = d.pengolahan.mitra.slice(0,10);
     var olahLabels = top10.map(function(m){return shortName(m.nama)});
-    chartOrError('olah-mitra', function(c){return new Chart(c, {type:'bar',data:{labels:olahLabels,datasets:[{label:'Pengadaan',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},{label:'Diolah',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
-    chartOrError('olah-fisik', function(c){return new Chart(c, {type:'bar',data:{labels:olahLabels,datasets:[{label:'Pengadaan GKP',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},{label:'Pemasukan Fisik',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
-    chartOrError('olah-rendeman', function(c){return new Chart(c, {type:'bar',data:{labels:olahLabels,datasets:[{label:'Rasio (%)',data:top10.map(function(m){return m.rasio}),backgroundColor:top10.map(function(m){return m.rasio>40?'#22c55e':m.rasio>20?'#eab308':'#ef4444'}),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%'}}}}}})});
+    var olahFullNames = top10.map(function(m){return m.nama});
+    chartOrError('olah-mitra', function(c){return new Chart(c, {type:'bar',data:{labels:olahLabels,datasets:[{label:'Pengadaan',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},{label:'Diolah',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',onClick:makeBarClickHandler(olahFullNames,'olah-search','pengolahan'),plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
+    chartOrError('olah-fisik', function(c){return new Chart(c, {type:'bar',data:{labels:olahLabels,datasets:[{label:'Pengadaan GKP',data:top10.map(function(m){return m.pengadaan}),backgroundColor:'#6366f1',borderRadius:4},{label:'Pemasukan Fisik',data:top10.map(function(m){return m.pengolahan}),backgroundColor:'#22c55e',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',onClick:makeBarClickHandler(olahFullNames,'olah-search','pengolahan'),plugins:{legend:{labels:{color:'#8b90a0'}}},scales:{x:{ticks:{callback:function(v){return fmtKg(v)}}}}}})});
+    chartOrError('olah-rendeman', function(c){return new Chart(c, {type:'bar',data:{labels:olahLabels,datasets:[{label:'Rasio (%)',data:top10.map(function(m){return m.rasio}),backgroundColor:top10.map(function(m){return m.rasio>40?'#22c55e':m.rasio>20?'#eab308':'#ef4444'}),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',onClick:makeBarClickHandler(olahFullNames,'olah-search','pengolahan'),plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%'}}}}}})});
 
     var rasio=d.pengolahan.rasio, gto=d.pengolahan.total_olah, gtp=d.pengolahan.total_pengadaan;
     chartOrError('olah-gauge', function(c){var gaugePlugin={id:'gaugeTextMain',afterDraw:function(chart){var ctx3=chart.ctx,ca3=chart.chartArea;var x3=(ca3.left+ca3.right)/2,y3=(ca3.top+ca3.bottom)/2.6;ctx3.save();ctx3.font='bold 32px -apple-system,sans-serif';ctx3.fillStyle='#e1e4ed';ctx3.textAlign='center';ctx3.textBaseline='middle';ctx3.fillText(rasio+'%',x3,y3-8);ctx3.font='14px -apple-system,sans-serif';ctx3.fillStyle='#8b90a0';ctx3.fillText('Diolah '+fmtKg(gto)+' / Total '+fmtKg(gtp)+' kg',x3,y3+22);ctx3.restore()}};return new Chart(c, {type:'doughnut',data:{labels:['Diolah','Sisa'],datasets:[{data:[rasio,100-rasio],backgroundColor:['#eab308','#2a2d3a'],borderWidth:0,circumference:180,rotation:270}]},options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12,usePointStyle:true}},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%'}}}}},plugins:[gaugePlugin]})});
