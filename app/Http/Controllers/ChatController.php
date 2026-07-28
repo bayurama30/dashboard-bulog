@@ -8,9 +8,16 @@ use Illuminate\Support\Facades\Cache;
 
 class ChatController extends Controller
 {
-    protected $apiBase = 'https://opencode.ai/zen/go/v1';
-    protected $apiKey = 'sk-tpNNRW4LkKwqpTknPiuHYON67b26dHpOvtnmLjFMovZBNQqO23BLA9DYNCrqJblO';
-    protected $model = 'deepseek-v4-flash';
+    protected $apiBase;
+    protected $apiKey;
+    protected $model;
+
+    public function __construct()
+    {
+        $this->apiBase = env('OPENROUTER_API_URL', 'https://opencode.ai/zen/v1/chat/completions');
+        $this->apiKey = env('OPENROUTER_API_KEY');
+        $this->model = env('OPENROUTER_MODEL', 'deepseek-v4-flash-free');
+    }
 
     protected function loadData()
     {
