@@ -284,12 +284,17 @@
       return div;
     }
 
-    function showTyping(){
+    function showTyping(customMessage){
       var msgs=document.getElementById('aiChatMessages');
       var div=document.createElement('div');
       div.className='ai-msg typing';
       div.id='aiTyping';
-      div.innerHTML='<div class="ai-typing-dots"><span></span><span></span><span></span></div>';
+      var html='';
+      if(customMessage){
+        html='<div style="font-size:.82em;color:var(--sub);margin-bottom:6px">'+customMessage+'</div>';
+      }
+      html+='<div class="ai-typing-dots"><span></span><span></span><span></span></div>';
+      div.innerHTML=html;
       msgs.appendChild(div);
       msgs.scrollTop=msgs.scrollHeight;
     }
@@ -323,7 +328,12 @@
       if(aiChatHistory.length>10)aiChatHistory=aiChatHistory.slice(-10);
       aiChatLoading=true;
       document.getElementById('aiChatSend').disabled=true;
-      showTyping();
+      var isFirstQuery=aiChatHistory.length<=1;
+      if(isFirstQuery){
+        showTyping('Mengambil data terbaru dari spreadsheet, mohon tunggu...');
+      }else{
+        showTyping();
+      }
       try{
         var res=await fetch('/api/chat',{
           method:'POST',
@@ -335,6 +345,15 @@
         if(json.ok){
           addChatMessage('assistant',json.message);
           aiChatHistory.push({role:'assistant',content:json.message});
+          if(json.data_refreshed){
+            showToast('info','Data Diperbarui','Data spreadsheet telah di-refresh ke versi terbaru');
+          }
+          if(json.data_updated){
+            var infoDiv=document.createElement('div');
+            infoDiv.style.cssText='font-size:.72em;color:var(--sub);text-align:center;padding:4px 0';
+            infoDiv.textContent='Data spreadsheet: '+json.data_updated;
+            document.getElementById('aiChatMessages').appendChild(infoDiv);
+          }
         }else{
           addChatMessage('assistant','⚠️ Error: '+(json.error||'Terjadi kesalahan'));
           showToast('error','AI Error',json.error||'Gagal mendapat respons');

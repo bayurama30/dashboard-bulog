@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
+use Symfony\Component\Process\Process;
 
 class ChatController extends Controller
 {
@@ -19,13 +19,63 @@ class ChatController extends Controller
         $this->model = config('ai.model');
     }
 
-    protected function loadData()
+    /**
+     * Fetch fresh data from Google Sheets via artisan command.
+     */
+    protected function fetchFresh(): ?array
+    {
+        try {
+            $process = new Process(['php', 'artisan', 'sheets:fetch']);
+            $process->setTimeout(30);
+            $process->setWorkingDirectory(base_path());
+            $process->run();
+
+            if ($process->isSuccessful()) {
+                $path = storage_path('app/dashboard-data.json');
+                if (file_exists($path)) {
+                    return json_decode(file_get_contents($path), true);
+                }
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('AI Chat: Gagal fetch fresh data: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Load data with auto-refresh if older than 1 minute.
+     * Returns: ['data' => array, 'is_fresh' => bool, 'fetched_at' => string]
+     */
+    protected function loadDataWithFreshness(): array
     {
         $path = storage_path('app/dashboard-data.json');
-        if (file_exists($path)) {
-            return json_decode(file_get_contents($path), true);
+        $isFresh = false;
+
+        // If file doesn't exist, fetch fresh
+        if (!file_exists($path)) {
+            $data = $this->fetchFresh();
+            if ($data) {
+                return ['data' => $data, 'is_fresh' => true, 'fetched_at' => $data['fetched_at'] ?? now()->toIso8601String()];
+            }
+            return ['data' => null, 'is_fresh' => false, 'fetched_at' => null];
         }
-        return null;
+
+        $data = json_decode(file_get_contents($path), true);
+        $fetchedAt = $data['fetched_at'] ?? null;
+
+        // If no timestamp or data older than 1 minute, fetch fresh
+        if (!$fetchedAt || strtotime($fetchedAt) < strtotime('-1 minute')) {
+            $fresh = $this->fetchFresh();
+            if ($fresh) {
+                return ['data' => $fresh, 'is_fresh' => true, 'fetched_at' => $fresh['fetched_at'] ?? now()->toIso8601String()];
+            }
+            // Fallback to cached data
+            return ['data' => $data, 'is_fresh' => false, 'fetched_at' => $fetchedAt];
+        }
+
+        // Data is fresh (< 1 minute)
+        return ['data' => $data, 'is_fresh' => false, 'fetched_at' => $fetchedAt];
     }
 
     protected function formatNumber($n): string
@@ -33,14 +83,8 @@ class ChatController extends Controller
         return number_format($n, 0, ',', '.');
     }
 
-    protected function buildSystemPrompt(): string
+    protected function buildSystemPrompt(array $data): string
     {
-        $data = $this->loadData();
-
-        if (!$data) {
-            return 'Kamu adalah asisten data untuk Dashboard Monitoring Bulog Kancab Ciamis 2026. Data belum tersedia. Beritahu user untuk refresh data terlebih dahulu.';
-        }
-
         $gkp = $data['gkp'] ?? [];
         $jagung = $data['jagung'] ?? [];
         $beras = $data['beras_pso'] ?? [];
@@ -212,8 +256,21 @@ PENGOLAHAN;
         $userMessage = $request->input('message');
         $history = $request->input('history', []);
 
+        // Load data with auto-refresh
+        $result = $this->loadDataWithFreshness();
+        $data = $result['data'];
+        $dataRefreshed = $result['is_fresh'];
+        $fetchedAt = $result['fetched_at'];
+
+        if (!$data) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Data belum tersedia. Silakan refresh data terlebih dahulu.',
+            ], 500);
+        }
+
         $messages = [
-            ['role' => 'system', 'content' => $this->buildSystemPrompt()],
+            ['role' => 'system', 'content' => $this->buildSystemPrompt($data)],
         ];
 
         foreach ($history as $h) {
@@ -248,6 +305,8 @@ PENGOLAHAN;
             return response()->json([
                 'ok' => true,
                 'message' => $content,
+                'data_refreshed' => $dataRefreshed,
+                'data_updated' => $fetchedAt ? date('d M Y H:i', strtotime($fetchedAt)) : null,
             ]);
         } catch (\Throwable $e) {
             return response()->json([
