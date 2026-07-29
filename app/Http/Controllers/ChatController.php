@@ -155,96 +155,57 @@ PROMPT;
 
     protected function buildCommodityDetail(array $raw, string $label, array $summary, int $target): string
     {
-        $rowCount = count($raw);
         $poCount = collect($raw)->pluck('nomor_po')->unique()->count();
         $totalQty = collect($raw)->sum('qty');
 
         // Unique values
         $wilayah = collect($raw)->pluck('wilayah')->unique()->filter()->sort()->values();
         $pemasok = collect($raw)->pluck('pemasok')->unique()->filter()->sort()->values();
-        $bulan = collect($raw)->pluck('bulan')->unique()->filter()->sort()->values();
 
-        // By month detail - count unique POs
+        // By month - count unique POs
         $byMonth = collect($raw)->groupBy('bulan')->map(function ($rows, $bulan) {
-            $poCount = $rows->pluck('nomor_po')->unique()->count();
-            return "{$bulan}: {$poCount} PO, " . $this->formatNumber($rows->sum('qty')) . " kg";
+            $po = $rows->pluck('nomor_po')->unique()->count();
+            return "{$bulan}: {$po} PO, " . $this->formatNumber($rows->sum('qty')) . " kg";
         })->implode("\n");
 
-        // By wilayah detail - count unique POs
+        // By wilayah - count unique POs
         $byWilayah = collect($raw)->groupBy('wilayah')->map(function ($rows, $w) {
-            $poCount = $rows->pluck('nomor_po')->unique()->count();
-            return "{$w}: {$poCount} PO, " . $this->formatNumber($rows->sum('qty')) . " kg";
+            $po = $rows->pluck('nomor_po')->unique()->count();
+            return "{$w}: {$po} PO, " . $this->formatNumber($rows->sum('qty')) . " kg";
         })->implode("\n");
 
-        // By pemasok detail - count unique POs (limit to top 20 by qty)
-        $byPemasok = collect($raw)->groupBy('pemasok')->map(function ($rows, $p) {
-            $poCount = $rows->pluck('nomor_po')->unique()->count();
-            return ['nama' => $p, 'po' => $poCount, 'qty' => $rows->sum('qty')];
-        })->sortByDesc('qty')->take(20)->map(function ($p) {
+        // Top 10 mitra by qty
+        $topMitra = collect($raw)->groupBy('pemasok')->map(function ($rows, $p) {
+            return ['nama' => $p, 'po' => $rows->pluck('nomor_po')->unique()->count(), 'qty' => $rows->sum('qty')];
+        })->sortByDesc('qty')->take(10)->map(function ($p) {
             return "{$p['nama']}: {$p['po']} PO, " . $this->formatNumber($p['qty']) . " kg";
         })->implode("\n");
 
-        // Recent 20 unique POs in compact format
-        $recentPOs = collect($raw)->groupBy('nomor_po')->map(function ($rows, $po) {
-            $first = $rows->first();
-            return [
-                'nomor_po' => $po,
-                'tanggal' => $first['tanggal_po'] ?? '-',
-                'mitra' => $first['nama_pemasok'] ?? '-',
-                'wilayah' => $first['wilayah'] ?? '-',
-                'qty' => $rows->sum('qty'),
-                'has_in' => $rows->contains(fn($r) => !empty($r['no_in'])),
-            ];
-        })->sortByDesc('tanggal')->take(20)->map(function ($p) {
-            return "{$p['tanggal']}|{$p['mitra']}|{$p['wilayah']}|" . $this->formatNumber($p['qty']) . "|" . ($p['has_in'] ? 'IN' : '-') . "|{$p['nomor_po']}";
-        })->implode("\n");
-
-        // POs without No IN - count unique POs (limit to 15)
-        $withoutIN = collect($raw)->filter(fn($r) => empty($r['no_in']));
-        $withoutINCount = $withoutIN->pluck('nomor_po')->unique()->count();
-        $withoutINPOs = $withoutIN->groupBy('nomor_po')->map(function ($rows, $po) {
-            $first = $rows->first();
-            return "- [{$first['tanggal_po']}] {$first['nama_pemasok']} ({$first['wilayah']}): " . $this->formatNumber($rows->sum('qty')) . " kg";
-        })->values()->sortByDesc(function ($line) {
-            return $line;
-        })->take(15)->implode("\n");
-
         // Stats
         $avgQty = $poCount > 0 ? round($totalQty / $poCount) : 0;
-        $maxQty = collect($raw)->groupBy('nomor_po')->map(fn($rows) => $rows->sum('qty'))->max();
-        $minQty = collect($raw)->groupBy('nomor_po')->map(fn($rows) => $rows->sum('qty'))->min();
+        $withoutIN = collect($raw)->filter(fn($r) => empty($r['no_in']))->pluck('nomor_po')->unique()->count();
 
         $targetInfo = '';
         if ($target > 0) {
             $pct = round($totalQty / $target * 100, 1);
-            $targetInfo = "\nTarget: {$this->formatNumber($target)} kg (Capai: {$pct}%)";
+            $targetInfo = " | Target: " . $this->formatNumber($target) . " kg ({$pct}%)";
         }
-
-        $wilayahList = $wilayah->implode(', ');
-        $bulanList = $bulan->implode(', ');
 
         return <<<DETAIL
 === {$label} ===
 Total: {$poCount} PO, {$this->formatNumber($totalQty)} kg{$targetInfo}
-Rata-rata: {$this->formatNumber($avgQty)} kg/PO | Min: {$this->formatNumber($minQty)} kg | Max: {$this->formatNumber($maxQty)} kg
-Bulan: {$bulanList}
-Wilayah ({$wilayah->count()}): {$wilayahList}
-Mitra ({$pemasok->count()}): terlampir di bawah
+Rata-rata: {$this->formatNumber($avgQty)} kg/PO
+Wilayah: {$wilayah->implode(', ')}
+Mitra: {$pemasok->count()} mitra | Belum input No IN: {$withoutIN} PO
 
-PER BULAN:
+Per Bulan:
 {$byMonth}
 
-PER WILAYAH:
+Per Wilayah:
 {$byWilayah}
 
-TOP 20 MITRA (berdasarkan qty):
-{$byPemasok}
-
-20 PO TERBARU (tanggal|mitra|wilayah|qty|status|no_po):
-{$recentPOs}
-
-{$withoutINCount} PO BELUM INPUT No IN (15 teratas):
-{$withoutINPOs}
+Top 10 Mitra:
+{$topMitra}
 DETAIL;
     }
 
