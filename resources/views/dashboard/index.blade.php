@@ -508,8 +508,8 @@
     });
     var grouped={};
     poToday.forEach(function(r){
-      var key=r.nama_pemasok||'Unknown';
-      if(!grouped[key])grouped[key]={nama:key,wilayah:r.wilayah||'-',qty:0,allHaveIN:true};
+      var key=r.nomor_po||'Unknown';
+      if(!grouped[key])grouped[key]={nomor_po:key,nama:r.nama_pemasok||'Unknown',wilayah:r.wilayah||'-',qty:0,allHaveIN:true};
       grouped[key].qty+=r.qty||0;
       if(!r.no_in||r.no_in.trim()==='')grouped[key].allHaveIN=false;
     });

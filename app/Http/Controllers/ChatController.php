@@ -99,14 +99,23 @@ class ChatController extends Controller
         // Pengolahan detail
         $pengolahanDetail = $this->buildPengolahanDetail($pengolahan);
 
-        // PO Today
+        // PO Today - group by nomor_po
         $today = now()->format('j/n/Y');
         $todayDate = now()->format('d F Y');
-        $todayPOs = collect($gkp['raw'] ?? [])->filter(fn($r) => ($r['tanggal_po'] ?? '') === $today);
+        $todayRows = collect($gkp['raw'] ?? [])->filter(fn($r) => ($r['tanggal_po'] ?? '') === $today);
+        $todayPOs = $todayRows->groupBy('nomor_po')->map(function ($rows, $po) {
+            return [
+                'nomor_po' => $po,
+                'nama_pemasok' => $rows->first()['nama_pemasok'] ?? '-',
+                'wilayah' => $rows->first()['wilayah'] ?? '-',
+                'qty' => $rows->sum('qty'),
+                'has_in' => $rows->contains(fn($r) => !empty($r['no_in'])),
+            ];
+        });
         $poToday = "PO HARI INI ({$todayDate}):\n";
         if ($todayPOs->isNotEmpty()) {
             $poToday .= "Ada " . $todayPOs->count() . " PO hari ini, total " . $this->formatNumber($todayPOs->sum('qty')) . " kg\n";
-            $poToday .= $todayPOs->map(fn($r) => "- {$r['nama_pemasok']} ({$r['wilayah']}): " . $this->formatNumber($r['qty'] ?? 0) . " kg, No IN: " . (($r['no_in'] ?? '') ? 'Ada' : 'Belum'))->implode("\n");
+            $poToday .= $todayPOs->map(fn($p) => "- [{$p['nomor_po']}] {$p['nama_pemasok']} ({$p['wilayah']}): " . $this->formatNumber($p['qty']) . " kg, No IN: " . ($p['has_in'] ? 'Ada' : 'Belum'))->implode("\n");
         } else {
             $poToday .= "Tidak ada PO hari ini.\n";
             $latestDate = collect($gkp['raw'] ?? [])->pluck('tanggal_po')->sort()->last();
@@ -116,6 +125,12 @@ class ChatController extends Controller
         return <<<PROMPT
 Kamu adalah asisten data Dashboard Monitoring Bulog Kancab Ciamis 2026.
 Data dari Google Spreadsheet, diperbarui: {$fetchedAt}
+
+PENTING TENTANG PO:
+- 1 PO = 1 nomor PO (kolom nomor_po)
+- 1 nomor PO biasanya untuk 1 mitra per hari
+- Data spreadsheet bisa punya beberapa baris untuk 1 nomor PO (duplikat), jangan hitung sebagai PO terpisah
+- Selalu kelompokkan berdasarkan nomor_po saat menghitung jumlah PO
 
 ATURAN:
 - Jawab SINGKAT, TO THE POINT (2-4 kalimat)
@@ -140,7 +155,8 @@ PROMPT;
 
     protected function buildCommodityDetail(array $raw, string $label, array $summary, int $target): string
     {
-        $count = count($raw);
+        $rowCount = count($raw);
+        $poCount = collect($raw)->pluck('nomor_po')->unique()->count();
         $totalQty = collect($raw)->sum('qty');
 
         // Unique values
@@ -148,40 +164,57 @@ PROMPT;
         $pemasok = collect($raw)->pluck('pemasok')->unique()->filter()->sort()->values();
         $bulan = collect($raw)->pluck('bulan')->unique()->filter()->sort()->values();
 
-        // By month detail
+        // By month detail - count unique POs
         $byMonth = collect($raw)->groupBy('bulan')->map(function ($rows, $bulan) {
-            return "{$bulan}: " . $rows->count() . " PO, " . $this->formatNumber($rows->sum('qty')) . " kg";
+            $poCount = $rows->pluck('nomor_po')->unique()->count();
+            return "{$bulan}: {$poCount} PO, " . $this->formatNumber($rows->sum('qty')) . " kg";
         })->implode("\n");
 
-        // By wilayah detail
+        // By wilayah detail - count unique POs
         $byWilayah = collect($raw)->groupBy('wilayah')->map(function ($rows, $w) {
-            return "{$w}: " . $rows->count() . " PO, " . $this->formatNumber($rows->sum('qty')) . " kg";
+            $poCount = $rows->pluck('nomor_po')->unique()->count();
+            return "{$w}: {$poCount} PO, " . $this->formatNumber($rows->sum('qty')) . " kg";
         })->implode("\n");
 
-        // By pemasok detail
+        // By pemasok detail - count unique POs
         $byPemasok = collect($raw)->groupBy('pemasok')->map(function ($rows, $p) {
-            return "{$p}: " . $rows->count() . " PO, " . $this->formatNumber($rows->sum('qty')) . " kg";
+            $poCount = $rows->pluck('nomor_po')->unique()->count();
+            return "{$p}: {$poCount} PO, " . $this->formatNumber($rows->sum('qty')) . " kg";
         })->implode("\n");
 
-        // By date detail - ALL dates with PO count and qty
+        // By date detail - count unique POs
         $byDate = collect($raw)->groupBy('tanggal_po')->sortKeys()->map(function ($rows, $date) {
+            $poCount = $rows->pluck('nomor_po')->unique()->count();
             $mitra = $rows->pluck('nama_pemasok')->unique()->implode(', ');
-            return "- {$date}: " . $rows->count() . " PO, " . $this->formatNumber($rows->sum('qty')) . " kg ({$mitra})";
+            return "- {$date}: {$poCount} PO, " . $this->formatNumber($rows->sum('qty')) . " kg ({$mitra})";
         })->implode("\n");
 
-        // Recent 50 POs in compact format
-        $recentPOs = collect($raw)->sortByDesc('tanggal_po')->take(50)->map(function ($r) {
-            return "{$r['tanggal_po']}|{$r['nama_pemasok']}|{$r['wilayah']}|" . $this->formatNumber($r['qty'] ?? 0) . "|" . (($r['no_in'] ?? '') ? 'IN' : '-') . "|{$r['nomor_po']}";
+        // Recent 50 unique POs in compact format
+        $recentPOs = collect($raw)->groupBy('nomor_po')->map(function ($rows, $po) {
+            $first = $rows->first();
+            return [
+                'nomor_po' => $po,
+                'tanggal' => $first['tanggal_po'] ?? '-',
+                'mitra' => $first['nama_pemasok'] ?? '-',
+                'wilayah' => $first['wilayah'] ?? '-',
+                'qty' => $rows->sum('qty'),
+                'has_in' => $rows->contains(fn($r) => !empty($r['no_in'])),
+            ];
+        })->sortByDesc('tanggal')->take(50)->map(function ($p) {
+            return "{$p['tanggal']}|{$p['mitra']}|{$p['wilayah']}|" . $this->formatNumber($p['qty']) . "|" . ($p['has_in'] ? 'IN' : '-') . "|{$p['nomor_po']}";
         })->implode("\n");
 
-        // POs without No IN
+        // POs without No IN - count unique POs
         $withoutIN = collect($raw)->filter(fn($r) => empty($r['no_in']));
-        $withoutINDetail = $withoutIN->take(30)->map(fn($r) => "- {$r['tanggal_po']} {$r['nama_pemasok']} ({$r['wilayah']}): " . $this->formatNumber($r['qty'] ?? 0) . " kg")->implode("\n");
+        $withoutINPOs = $withoutIN->groupBy('nomor_po')->map(function ($rows, $po) {
+            $first = $rows->first();
+            return "- [{$first['tanggal_po']}] {$first['nama_pemasok']} ({$first['wilayah']}): " . $this->formatNumber($rows->sum('qty')) . " kg";
+        })->values()->take(30)->implode("\n");
 
         // Stats
-        $avgQty = $count > 0 ? round($totalQty / $count) : 0;
-        $maxQty = collect($raw)->max('qty');
-        $minQty = collect($raw)->min('qty');
+        $avgQty = $poCount > 0 ? round($totalQty / $poCount) : 0;
+        $maxQty = collect($raw)->groupBy('nomor_po')->map(fn($rows) => $rows->sum('qty'))->max();
+        $minQty = collect($raw)->groupBy('nomor_po')->map(fn($rows) => $rows->sum('qty'))->min();
 
         $targetInfo = '';
         if ($target > 0) {
@@ -193,9 +226,11 @@ PROMPT;
         $pemasokList = $pemasok->implode(', ');
         $bulanList = $bulan->implode(', ');
 
+        $withoutINCount = $withoutIN->pluck('nomor_po')->unique()->count();
+
         return <<<DETAIL
 === {$label} ===
-Total: {$count} PO, {$this->formatNumber($totalQty)} kg{$targetInfo}
+Total: {$poCount} PO ({$rowCount} baris), {$this->formatNumber($totalQty)} kg{$targetInfo}
 Rata-rata: {$this->formatNumber($avgQty)} kg/PO | Min: {$this->formatNumber($minQty)} kg | Max: {$this->formatNumber($maxQty)} kg
 Bulan: {$bulanList}
 Wilayah ({$wilayah->count()}): {$wilayahList}
@@ -216,8 +251,8 @@ PER MITRA:
 50 PO TERBARU (tanggal|mitra|wilayah|qty|status|no_po):
 {$recentPOs}
 
-{$withoutIN->count()} PO BELUM INPUT No IN:
-{$withoutINDetail}
+{$withoutINCount} PO BELUM INPUT No IN:
+{$withoutINPOs}
 DETAIL;
     }
 

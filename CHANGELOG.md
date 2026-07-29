@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`composer.json`** — typo `laravel/pao` → `laravel/pail`.
 
 ### Fixed
+- **PO counting logic** — 1 PO sekarang dihitung berdasarkan nomor PO unik (bukan jumlah baris), karena 1 nomor PO bisa punya beberapa baris di spreadsheet. Dashboard dan AI chat sekarang konsisten menghitung PO per nomor PO.
 - **PO Hari Ini date format** — format tanggal disesuaikan dengan data (`j/n/Y` tanpa leading zero) agar PO Hari Ini terdeteksi dengan benar.
 - **AI Chat API configuration** — URL base API diperbaiki (dari `/zen/go/v1` ke `/zen/v1`), model diganti ke `deepseek-v4-flash-free`, dan API key ditambahkan default value.
 - **Syntax error ChatController** — string concatenation di dalam heredoc dipindahkan ke variabel terpisah.
