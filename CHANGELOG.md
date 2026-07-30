@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`composer.json`** — typo `laravel/pao` → `laravel/pail`.
 
 ### Fixed
+- **AI Chat empty response** — system prompt terlalu panjang menyebabkan model kehabisan token (finish_reason: length). Prompt dioptimasi dari 68K ke 8K karakter.
 - **PO counting logic** — 1 PO sekarang dihitung berdasarkan nomor PO unik (bukan jumlah baris), karena 1 nomor PO bisa punya beberapa baris di spreadsheet. Dashboard dan AI chat sekarang konsisten menghitung PO per nomor PO.
 - **PO Hari Ini date format** — format tanggal disesuaikan dengan data (`j/n/Y` tanpa leading zero) agar PO Hari Ini terdeteksi dengan benar.
 - **AI Chat API configuration** — URL base API diperbaiki (dari `/zen/go/v1` ke `/zen/v1`), model diganti ke `deepseek-v4-flash-free`, dan API key ditambahkan default value.
