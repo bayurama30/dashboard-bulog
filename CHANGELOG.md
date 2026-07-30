@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`CHANGELOG.md`** — dokumentasi perubahan proyek.
 
 ### Changed
+- **Layout tab Pengolahan** — KPI grid diubah dari 8 kolom ke 4 kolom agar lebih besar dan mudah dibaca. Font size diperbesar.
+- **Gauge chart text alignment** — teks persentase di semua gauge chart sekarang benar-benar center middle (diubah dari `/2.6` ke `/2`).
 - **Angka menggunakan format real** — semua angka di dashboard (KPI, tabel, chart) sekarang menampilkan angka lengkap dengan pemisah ribuan (contoh: 108.662.094 kg) bukan format compact (108.7M).
   - "Tonase Pengadaan GKP" → "Pengadaan GKP"
   - "Tonase Pengadaan Setara Beras" → "Pengadaan Setara Beras"

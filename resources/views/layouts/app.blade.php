@@ -22,11 +22,11 @@
     .tab.active{color:var(--accent);background:var(--card);border:1px solid var(--border);border-bottom-color:var(--card);margin-bottom:-1px}
     .content{padding:24px;max-width:1400px;margin:0 auto}
     .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
-    .pengolahan-kpi{grid-template-columns:repeat(8,1fr);gap:10px}
-    .pengolahan-kpi .kpi{padding:14px 6px;border-radius:8px;min-height:72px}
-    .pengolahan-kpi .kpi .label{font-size:.52em;margin-bottom:2px;letter-spacing:.2px}
-    .pengolahan-kpi .kpi .value{font-size:1.6em;font-weight:700}
-    .pengolahan-kpi .kpi .sub{font-size:.52em;margin-top:2px}
+    .pengolahan-kpi{grid-template-columns:repeat(4,1fr);gap:12px}
+    .pengolahan-kpi .kpi{padding:16px 10px;border-radius:10px;min-height:80px}
+    .pengolahan-kpi .kpi .label{font-size:.7em;margin-bottom:4px;letter-spacing:.3px}
+    .pengolahan-kpi .kpi .value{font-size:1.8em;font-weight:700}
+    .pengolahan-kpi .kpi .sub{font-size:.7em;margin-top:4px}
     .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;transition:background .3s}
     .kpi .label{color:var(--sub);font-size:.85em;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
     .kpi .value{font-size:1.8em;font-weight:700}
@@ -87,11 +87,11 @@
       .tab{padding:8px 14px;font-size:.82em;white-space:nowrap;border-radius:6px 6px 0 0;flex-shrink:0}
       .content{padding:16px 12px}
       .kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}
-      .pengolahan-kpi{grid-template-columns:repeat(2,1fr);gap:8px}
-      .pengolahan-kpi .kpi{padding:12px 4px;border-radius:6px;min-height:64px}
-      .pengolahan-kpi .kpi .label{font-size:.5em}
-      .pengolahan-kpi .kpi .value{font-size:1.4em}
-      .pengolahan-kpi .kpi .sub{font-size:.5em}
+      .pengolahan-kpi{grid-template-columns:repeat(2,1fr);gap:10px}
+      .pengolahan-kpi .kpi{padding:14px 8px;border-radius:8px;min-height:72px}
+      .pengolahan-kpi .kpi .label{font-size:.65em}
+      .pengolahan-kpi .kpi .value{font-size:1.5em}
+      .pengolahan-kpi .kpi .sub{font-size:.65em}
       .kpi{padding:14px 10px;border-radius:10px}
       .kpi .label{font-size:.72em;margin-bottom:4px}
       .kpi .value{font-size:1.35em}

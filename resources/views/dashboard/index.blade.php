@@ -300,7 +300,7 @@
         charts['olah-gauge']=new Chart(document.getElementById('olah-gauge'),{
           type:'doughnut',data:{labels:['Diolah','Sisa'],datasets:[{data:[rasio,100-rasio],backgroundColor:['#eab308','#2a2d3a'],borderWidth:0,circumference:180,rotation:270}]},
           options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12,usePointStyle:true}},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%'}}}}},
-          plugins:[{id:'gaugeText2',afterDraw:function(chart){var ctx2=chart.ctx,ca2=chart.chartArea;var x2=(ca2.left+ca2.right)/2,y2=(ca2.top+ca2.bottom)/2.6;ctx2.save();ctx2.font='bold 32px -apple-system,sans-serif';ctx2.fillStyle='#e1e4ed';ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillText(rasio+'%',x2,y2-8);ctx2.font='14px -apple-system,sans-serif';ctx2.fillStyle='#8b90a0';ctx2.fillText('Diolah '+fmtKg(to)+' / Total '+fmtKg(tp)+' kg',x2,y2+22);ctx2.restore()}}]
+          plugins:[{id:'gaugeText2',afterDraw:function(chart){var ctx2=chart.ctx,ca2=chart.chartArea;var x2=(ca2.left+ca2.right)/2,y2=(ca2.top+ca2.bottom)/2;ctx2.save();ctx2.font='bold 32px -apple-system,sans-serif';ctx2.fillStyle='#e1e4ed';ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillText(rasio+'%',x2,y2-8);ctx2.font='14px -apple-system,sans-serif';ctx2.fillStyle='#8b90a0';ctx2.fillText('Diolah '+fmtKg(to)+' / Total '+fmtKg(tp)+' kg',x2,y2+22);ctx2.restore()}}]
         });
       }catch(e){console.warn('olah-gauge error:',e);}
       destroyChart('olah-fisik');
@@ -476,7 +476,7 @@
         options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%'}}}}},
         plugins:[{id:'gkpGaugeText',afterDraw:function(chart){
           var ctx=chart.ctx,ca=chart.chartArea;
-          var x=(ca.left+ca.right)/2,y=(ca.top+ca.bottom)/2.6;
+          var x=(ca.left+ca.right)/2,y=(ca.top+ca.bottom)/2;
           ctx.save();
           ctx.font='bold 36px -apple-system,sans-serif';ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';
           ctx.fillText(pct+'%',x,y-8);
@@ -559,7 +559,7 @@
     chartOrError('olah-rendeman', function(c){return new Chart(c, {type:'bar',data:{labels:olahLabels,datasets:[{label:'Rasio (%)',data:top10.map(function(m){return m.rasio}),backgroundColor:top10.map(function(m){return m.rasio>40?'#22c55e':m.rasio>20?'#eab308':'#ef4444'}),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',onClick:makeBarClickHandler(olahFullNames,'olah-search','pengolahan'),plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{callback:function(v){return v+'%'}}}}}})});
 
     var rasio=d.pengolahan.rasio, gto=d.pengolahan.total_olah, gtp=d.pengolahan.total_pengadaan;
-    chartOrError('olah-gauge', function(c){var gaugePlugin={id:'gaugeTextMain',afterDraw:function(chart){var ctx3=chart.ctx,ca3=chart.chartArea;var x3=(ca3.left+ca3.right)/2,y3=(ca3.top+ca3.bottom)/2.6;ctx3.save();ctx3.font='bold 32px -apple-system,sans-serif';ctx3.fillStyle='#e1e4ed';ctx3.textAlign='center';ctx3.textBaseline='middle';ctx3.fillText(rasio+'%',x3,y3-8);ctx3.font='14px -apple-system,sans-serif';ctx3.fillStyle='#8b90a0';ctx3.fillText('Diolah '+fmtKg(gto)+' / Total '+fmtKg(gtp)+' kg',x3,y3+22);ctx3.restore()}};return new Chart(c, {type:'doughnut',data:{labels:['Diolah','Sisa'],datasets:[{data:[rasio,100-rasio],backgroundColor:['#eab308','#2a2d3a'],borderWidth:0,circumference:180,rotation:270}]},options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12,usePointStyle:true}},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%'}}}}},plugins:[gaugePlugin]})});
+    chartOrError('olah-gauge', function(c){var gaugePlugin={id:'gaugeTextMain',afterDraw:function(chart){var ctx3=chart.ctx,ca3=chart.chartArea;var x3=(ca3.left+ca3.right)/2,y3=(ca3.top+ca3.bottom)/2;ctx3.save();ctx3.font='bold 32px -apple-system,sans-serif';ctx3.fillStyle='#e1e4ed';ctx3.textAlign='center';ctx3.textBaseline='middle';ctx3.fillText(rasio+'%',x3,y3-8);ctx3.font='14px -apple-system,sans-serif';ctx3.fillStyle='#8b90a0';ctx3.fillText('Diolah '+fmtKg(gto)+' / Total '+fmtKg(gtp)+' kg',x3,y3+22);ctx3.restore()}};return new Chart(c, {type:'doughnut',data:{labels:['Diolah','Sisa'],datasets:[{data:[rasio,100-rasio],backgroundColor:['#eab308','#2a2d3a'],borderWidth:0,circumference:180,rotation:270}]},options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{position:'bottom',labels:{color:'#8b90a0',padding:12,usePointStyle:true}},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%'}}}}},plugins:[gaugePlugin]})});
 
     if(d.gkp.raw) populateFilters('gkp');
     if(d.jagung.raw) populateFilters('jagung');
