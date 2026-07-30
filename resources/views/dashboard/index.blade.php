@@ -164,10 +164,7 @@
 
   function dataKey(tab){return tab==='beras'?'beras_pso':tab}
   function fmtNum(n){
-    if(n >= 1000000000) return (n/1000000000).toFixed(1).replace(/\.0$/,'')+'B';
-    if(n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
-    if(n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,'')+'K';
-    return n.toLocaleString('id-ID');
+    return Math.round(n).toLocaleString('id-ID');
   }
   function shortName(n){return n.replace('CV. ','').replace('PD. ','').replace('KOMPLEKS PERGUDANGAN ','')}
 

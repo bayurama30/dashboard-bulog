@@ -187,7 +187,7 @@
     var MONTHS_SHORT=['Jan','Feb','Mar','Apr','Mei','Jun'];
     var COLORS=['#6366f1','#8b5cf6','#a855f7','#c084fc','#e879f9','#f0abfc','#22c55e','#3b82f6','#f97316','#eab308','#ef4444','#ec4899','#14b8a6','#f59e0b','#84cc16'];
     function fmt(n){return n.toLocaleString('id-ID')}
-    function fmtKg(n){return n>=1000?Math.round(n/1000).toLocaleString('id-ID')+'K':n.toLocaleString('id-ID')}
+    function fmtKg(n){return Math.round(n).toLocaleString('id-ID')}
     document.getElementById('fetchDate').textContent=DATA.fetched_at?new Date(DATA.fetched_at).toLocaleString('id-ID',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}):'N/A';
 
     function getTheme(){return document.documentElement.getAttribute('data-theme')||'dark'}
