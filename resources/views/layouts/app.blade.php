@@ -204,7 +204,7 @@
       const btn=document.getElementById('btnRefresh');
       btn.disabled=true;btn.textContent='⏳ Fetching...';
       try{
-        const res=await fetch('/refresh',{method:'POST',headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}});
+        const res=await fetch('refresh',{method:'POST',headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}});
         const json=await res.json();
         if(!json.ok){
           var errMsg=json.error||'Silakan coba beberapa saat lagi';

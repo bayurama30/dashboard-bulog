@@ -643,7 +643,7 @@
         }
       }
 
-      var url = '/export/xlsx/' + exportTab;
+      var url = 'export/xlsx/' + exportTab;
       if(params.toString()) url += '?' + params.toString();
       window.location.href = url;
     } else if(type === 'pdf'){
