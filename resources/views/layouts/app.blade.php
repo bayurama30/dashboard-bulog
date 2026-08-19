@@ -6,6 +6,10 @@
   <title>Monitoring Bulog Kancab Ciamis 2026</title>
   <script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);window.__theme=t})()</script>
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <script>
+    // Dashboard selalu diserve di prefix /bulog (via Tailscale funnel)
+    var BASE_PATH = '/bulog';
+</script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <style>
     :root,[data-theme="dark"] {--bg:#0f1117;--card:#1a1d27;--border:#2a2d3a;--text:#e1e4ed;--sub:#8b90a0;--accent:#6366f1;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--blue:#3b82f6;--orange:#f97316;--purple:#a855f7;--btn-reset-hover:#3a3d4a;--hover-bg:rgba(255,255,255,.03);--hover-table:rgba(255,255,255,.02);--th-bg:rgba(99,102,241,.05)}
@@ -204,7 +208,7 @@
       const btn=document.getElementById('btnRefresh');
       btn.disabled=true;btn.textContent='⏳ Fetching...';
       try{
-        const res=await fetch('refresh',{method:'POST',headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}});
+        const res=await fetch(BASE_PATH + '/refresh',{method:'POST',headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}});
         const json=await res.json();
         if(!json.ok){
           var errMsg=json.error||'Silakan coba beberapa saat lagi';
@@ -335,7 +339,7 @@
         showTyping();
       }
       try{
-        var res=await fetch('/api/chat',{
+        var res=await fetch(BASE_PATH + '/api/chat',{
           method:'POST',
           headers:{'Content-Type':'application/json','Accept':'application/json'},
           body:JSON.stringify({message:msg,history:aiChatHistory.slice(0,-1)})
