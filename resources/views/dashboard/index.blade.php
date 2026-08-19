@@ -105,7 +105,8 @@
 {{-- ================ PENGOLAHAN TAB ================ --}}
 <div id="tab-pengolahan" class="tab-content" style="display:{{ $activeTab === 'pengolahan' ? 'block' : 'none' }}">
   <div class="filter-bar">
-    <input type="text" id="olah-search" placeholder="Cari mitra..." oninput="applyFilters('pengolahan')">
+    <select id="olah-filter-mitra" onchange="document.getElementById('olah-search').value='';applyFilters('pengolahan')"><option value="">Semua Mitra</option></select>
+    <input type="text" id="olah-search" placeholder="Cari mitra..." oninput="document.getElementById('olah-filter-mitra').value='';applyFilters('pengolahan')">
     <button class="btn-reset" onclick="resetFilters('pengolahan')">Reset</button>
     <button class="btn-export" onclick="exportData('csv','pengolahan')">📥 CSV</button>
     <button class="btn-export" onclick="exportData('xlsx','pengolahan')">📊 Excel</button>
@@ -255,8 +256,9 @@
   window.applyFilters = function(tab){
     if(tab==='pengolahan'){
       var q=document.getElementById('olah-search').value.toLowerCase();
+      var mitraFilter=document.getElementById('olah-filter-mitra').value;
       var mitra=d.pengolahan.mitra;
-      var filtered=q?mitra.filter(function(m){return m.nama.toLowerCase().indexOf(q)!==-1}):mitra;
+      var filtered=mitraFilter?mitra.filter(function(m){return m.nama===mitraFilter}):q?mitra.filter(function(m){return m.nama.toLowerCase().indexOf(q)!==-1}):mitra;
       var tp=filtered.reduce(function(s,m){return s+m.pengadaan},0);
       var tpb=filtered.reduce(function(s,m){return s+(m.pengadaan_beras||0)},0);
       var to=filtered.reduce(function(s,m){return s+m.pengolahan},0);
@@ -407,6 +409,7 @@
 
   window.resetFilters = function(tab){
     if(tab==='pengolahan'){
+      document.getElementById('olah-filter-mitra').value='';
       document.getElementById('olah-search').value='';
       window.applyFilters('pengolahan');
       return;
@@ -435,6 +438,9 @@
       const gudang=[...new Set(raw.map(r=>r.gudang))].sort();
       fillSelect('beras-filter-bulan',bulan);
       fillSelect('beras-filter-gudang',gudang);
+    }else if(tab==='pengolahan'){
+      const mitra=[...new Set(d.pengolahan.mitra.map(m=>m.nama))].sort();
+      fillSelect('olah-filter-mitra',mitra);
     }
   }
 
@@ -564,6 +570,7 @@
     if(d.gkp.raw) populateFilters('gkp');
     if(d.jagung.raw) populateFilters('jagung');
     if(d.beras_pso.raw) populateFilters('beras');
+    if(d.pengolahan.mitra) populateFilters('pengolahan');
   }
 
   drawAll();
@@ -600,8 +607,10 @@
         (tabData.header||[]).forEach(function(h,i){ row[sanitizeHeader(h)] = m[sanitizeHeader(h)] || ''; });
         return row;
       });
+      var mitraFilter = document.getElementById('olah-filter-mitra').value;
       var q = document.getElementById('olah-search').value.toLowerCase();
-      if(q) raw = raw.filter(function(r){ return (r[sanitizeHeader('nama_mitra')]||'').toLowerCase().indexOf(q)!==-1; });
+      if(mitraFilter) raw = raw.filter(function(r){ return (r[sanitizeHeader('nama_mitra')]||'')===mitraFilter; });
+      else if(q) raw = raw.filter(function(r){ return (r[sanitizeHeader('nama_mitra')]||'').toLowerCase().indexOf(q)!==-1; });
     } else {
       raw = getFilteredRaw(key);
     }
@@ -620,8 +629,10 @@
       var params = new URLSearchParams();
 
       if(tab === 'pengolahan'){
+        var mitraFilter = document.getElementById('olah-filter-mitra').value;
         var q = document.getElementById('olah-search').value;
-        if(q) params.set('search', q);
+        if(mitraFilter) params.set('mitra', mitraFilter);
+        else if(q) params.set('search', q);
       } else {
         var prefix = tab === 'beras_pso' ? 'beras' : tab;
         var bulan = document.getElementById(prefix+'-filter-bulan').value;

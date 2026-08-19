@@ -237,7 +237,12 @@ class DashboardController extends Controller
         if ($tab === 'pengolahan') {
             $raw = $data['pengolahan']['mitra'] ?? [];
             $search = $filters['search'] ?? '';
-            if (!empty($search)) {
+            $mitra = $filters['mitra'] ?? '';
+            if (!empty($mitra)) {
+                $raw = array_filter($raw, function ($m) use ($mitra) {
+                    return ($m['nama'] ?? '') === $mitra;
+                });
+            } elseif (!empty($search)) {
                 $raw = array_filter($raw, function ($m) use ($search) {
                     return stripos($m['nama'] ?? '', $search) !== false;
                 });
@@ -449,6 +454,7 @@ class DashboardController extends Controller
                         'wilayah' => 'Wilayah',
                         'pemasok' => 'Pemasok',
                         'gudang' => 'Gudang',
+                        'mitra' => 'Mitra',
                         'search' => 'Pencarian',
                     ];
                     $label = $labels[$key] ?? $key;
