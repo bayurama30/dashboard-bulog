@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **AI Chat Assistant provider** — beralih dari opencode zen API (`deepseek-v4-flash-free`) ke **Poolside** OpenAI-compatible inference API (`https://inference.poolside.ai/v1`), model `poolside/laguna-s-2.1`. Konfigurasi via env `POOLSIDE_API_KEY`, `POOLSIDE_API_URL`, `POOLSIDE_MODEL` (lihat `.env.example`). Controller tidak berubah karena API sudah OpenAI-compatible (`/v1/chat/completions`).
+
+### Fixed
+- **AI Chat Assistant `Connection Error: Unexpected token '<'`** — ada **dua** sebab:
+  1. Frontend memakai `BASE_PATH = '/bulog'` (hardcoded), padahal aplikasi dilayani di **root**; sehingga `POST /bulog/api/chat` dapat **404 HTML** (bukan JSON). `BASE_PATH` kini **dinamis** — `''` bila di root, `'/bulog'` bila ada reverse-proxy prefix `/bulog` — agar semua panggilan AJAX (refresh/data/export/api-chat) selalu menargetkan route Laravel yang valid.
+  2. `temperature` dikirim sebagai string `"0.5"` ke API Poolside yang menuntut tipe `f32` → respons **400**. Nilai sekarang di-cast `(float)`; `max_tokens` juga di-cast `(int`, di `config/ai.php` (Laravel `env()` selalu kembalikan string).
+
 ### Added
 - **AI Chat Assistant** — floating button chat di kanan bawah untuk bertanya tentang data dashboard. Menggunakan opencode zen API (deepseek-v4-flash-free). Fitur: markdown rendering, conversation history, dark/light theme, mobile responsive. AI dapat mengakses semua data spreadsheet termasuk data mentah, statistik per tanggal/bulan/wilayah/mitra, dan referensi spreadsheet. Auto-refresh data jika lebih dari 1 menit, loading indicator untuk chat pertama.
 - **PO Hari Ini** — tabel di tab GKP menampilkan daftar PO yang tanggal PO-nya sama dengan hari ini (berdasarkan waktu refresh data), di-grouping per mitra dengan total kuantum, wilayah, dan status Input Gudang Virtual (Selesai/Belum Input berdasarkan kolom No IN).

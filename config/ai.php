@@ -2,14 +2,36 @@
 
 return [
 
-    'api_key' => env('OPENROUTER_API_KEY'),
+    /*
+    |--------------------------------------------------------------------------
+    | AI Chat Assistant — Poolside Provider
+    |--------------------------------------------------------------------------
+    |
+    | Konfigurasi AI Assistant (menu "Tanya AI").
+    |
+    | Provider : Poolside-hosted OpenAI-compatible inference API
+    | Base URL : https://inference.poolside.ai/v1
+    | Endpoint : POST {api_url}/chat/completions  (di-append " /chat/completions" oleh ChatController)
+    | Model    : poolside/laguna-s-2.1
+    | Auth     : Authorization: Bearer {POOLSIDE_API_KEY}
+    |
+    | Dokumentasi: https://docs.poolside.ai/api/overview
+    |
+    */
 
-    'api_url' => env('OPENROUTER_API_URL', 'https://opencode.ai/zen/v1'),
+    'provider' => env('AI_PROVIDER', 'poolside'),
 
-    'model' => env('OPENROUTER_MODEL', 'deepseek-v4-flash-free'),
+    'api_key' => env('POOLSIDE_API_KEY'),
 
-    'max_tokens' => env('AI_MAX_TOKENS', 1536),
+    'api_url' => env('POOLSIDE_API_URL', 'https://inference.poolside.ai/v1'),
 
-    'temperature' => env('AI_TEMPERATURE', 0.5),
+    'model' => env('POOLSIDE_MODEL', 'poolside/laguna-s-2.1'),
+
+    'max_tokens' => (int) env('AI_MAX_TOKENS', 1536),
+
+    // Cast ke tipe skalar: Laravel env() selalu mengembalikan string,
+    // sedangkan API Poolside (OpenAI-compatible) menolak string untuk
+    // temperature (harus f32) dan max_tokens (harus integer).
+    'temperature' => (float) env('AI_TEMPERATURE', 0.5),
 
 ];

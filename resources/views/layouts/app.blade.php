@@ -7,8 +7,14 @@
   <script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);window.__theme=t})()</script>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <script>
-    // Dashboard selalu diserve di prefix /bulog (via Tailscale funnel)
-    var BASE_PATH = '/bulog';
+    // Base path: '/bulog' jika app di-serve di bawah prefix /bulog, '' jika di root.
+    // Dinamis agar semua panggilan AJAX (refresh/data/export/api-chat) selalu
+    // menargetkan route Laravel yang valid, terlepas ada/tidaknya reverse-proxy
+    // penambah prefix /bulog di depan.
+    var BASE_PATH = (function(){
+      var p = window.location.pathname;
+      return (p.replace(/\/[^\/]+$/, '').replace(/\/+$/, '')) || '';
+    })();
 </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <style>
